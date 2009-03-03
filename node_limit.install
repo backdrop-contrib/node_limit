@@ -1,0 +1,70 @@
+<?php
+
+define("NODE_LIMIT_NO_LIMIT", -1);
+/**
+ * Implementation of hook_install().
+ */
+function node_limit_install() {
+	drupal_install_schema('node_limit');
+}
+
+/**
+ * Implementation of hook_schema().
+ */
+function node_limit_schema() {
+	$schema['node_limit_role'] = array(
+		'description'			=> t('The base Node Limit role table.'),
+		'fields'				=> array(
+			'rid'				=> array(
+				'description'	=> t('The {role}.rid to which this {node_limit_role} entry applies.'),
+				'type'			=> 'int',
+				'not null'		=> TRUE,
+				'default'		=> 0),
+			'type'				=> array(
+				'description'	=> t('The {node}.type to which this {node_limit_role} entry applies'),
+				'type' => 'varchar',
+				'length' => 32,
+				'not null'		=> TRUE),
+			'limit'				=> array(
+				'description'	=> t('The number of nodes that members in this role may create'),
+				'type'			=> 'int',
+				'size'			=> 'big',
+				'unsigned'		=> FALSE,
+				'not null'		=> TRUE,
+				'default'		=> node_limit_NO_LIMIT)),
+		'primary key'			=> array('rid', 'type'),
+	);
+	$schema['node_limit_user'] = array(
+		'description'			=> t('The base Node Limit user table.'),
+		'fields'				=> array(
+			'uid'				=> array(
+				'description'	=> t('The {user}.uid to which this {node_limit_user} entry applies.'),
+				'type'			=> 'int',
+				'not null'		=> TRUE,
+				'default'		=> 0),
+			'type'				=> array(
+				'description'	=> t('The {node}.type to which this {node_limit_user} entry applies'),
+				'type' => 'varchar',
+				'length' => 32,
+				'not null'		=> TRUE),
+			'limit'				=> array(
+				'description'	=> t('The number of nodes that this user may create'),
+				'type'			=> 'int',
+				'size'			=> 'big',
+				'unsigned'		=> FALSE,
+				'not null'		=> TRUE,
+				'default'		=> node_limit_NO_LIMIT)),
+		'primary key'			=> array('uid', 'type'),
+	);
+	return $schema;
+}
+
+
+/*
+ * Implementation of hook_uninstall
+ */
+function node_limit_uninstall() {
+	drupal_uninstall_schema('node_limit');
+}
+
+?>
