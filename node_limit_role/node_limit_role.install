@@ -2,25 +2,25 @@
 /**
  * Implementation of hook_install().
  */
-function node_limit_user_install() {
-	db_query("DROP TABLE IF EXISTS {node_limit_user}");
-	drupal_install_schema('node_limit_user');
+function node_limit_role_install() {
+	db_query("DROP TABLE IF EXISTS {node_limit_role}");
+	drupal_install_schema('node_limit_role');
 }
 
 /**
  * Implementation of hook_schema().
  */
-function node_limit_user_schema() {
-  $schema['node_limit_user'] = array(
-    'description' => t('The table for applying node limits to a user'),
+function node_limit_role_schema() {
+  $schema['node_limit_role'] = array(
+    'description' => t('The table for applying node limits to a role'),
     'fields' => array(
       'lid' => array(
         'description' => t('The {node_limit}.lid'),
         'type' => 'int',
         'not null' => TRUE
       ),
-      'uid' => array(
-        'description' => t('The {user}.uid to which this limit applies'),
+      'rid' => array(
+        'description' => t('The {role}.rid to which this limit applies'),
         'type' => 'serial',
         'not null' => TRUE,
         'unsigned' => TRUE,
@@ -31,7 +31,7 @@ function node_limit_user_schema() {
      * this means that in the future, we may allow a limit to be applied to more
      * than one user.  right now, though, its one-user-per-limit
      */
-    'primary key' => array('lid', 'uid')
+    'primary key' => array('lid', 'rid')
   );
   
   return $schema;
@@ -41,8 +41,8 @@ function node_limit_user_schema() {
 /*
  * Implementation of hook_uninstall
  */
-function node_limit_user_uninstall() {
-	drupal_uninstall_schema('node_limit_user');
+function node_limit_role_uninstall() {
+	drupal_uninstall_schema('node_limit_role');
 }
 
 ?>

@@ -77,10 +77,17 @@ function node_limit_user_node_limit_element_submit($lid, $applies, $element) {
   $uid = $user->uid;
   //if they're editing, then this limit already exists
   //therefore it has to be deleted before it can be resaved
-  db_query("DELETE FROM {node_limit_user} WHERE `lid`='%d'", $lid);
+  node_limit_user_node_limit_delete($lid);
   if ($applies) {
     db_query("INSERT INTO {node_limit_user} VALUES('%d', '%d')", $lid, $uid);
   }
+}
+
+/**
+ * implementation of hook_node_limit_delete
+ */
+function node_limit_user_node_limit_delete($lid) {
+  db_query("DELETE FROM {node_limit_user} WHERE `lid`='%d'", $lid);
 }
 
 /**

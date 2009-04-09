@@ -1,0 +1,5 @@
+name = Node Limit Role
+description = Allows admins to apply a Node Limit to a role
+package = Access control
+dependencies[] = node_limit
+core = 6.x

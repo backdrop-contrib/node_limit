@@ -44,8 +44,8 @@ function node_limit_schema() {
         'description' => t('The weight of this limit'),
         'type' => 'int',
         'not null' => TRUE,
-        'default' => 0)
-      ,
+        'default' => 0
+      ),
     ),
     'primary key' => array('lid')
   );
