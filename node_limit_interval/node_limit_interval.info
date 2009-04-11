@@ -1,0 +1,5 @@
+name = Node Limit Interval
+description = Allows admins to apply a Node Limit to a time interval
+package = Access control
+dependencies[] = node_limit
+core = 6.x

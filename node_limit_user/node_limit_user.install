@@ -1,10 +1,17 @@
 <?php
+// $Id$
+
+/**
+ * @file
+ * Installation functions for module node_limit_user.
+ */
+
 /**
  * Implementation of hook_install().
  */
 function node_limit_user_install() {
-	db_query("DROP TABLE IF EXISTS {node_limit_user}");
-	drupal_install_schema('node_limit_user');
+  db_query("DROP TABLE IF EXISTS {node_limit_user}");
+  drupal_install_schema('node_limit_user');
 }
 
 /**
@@ -33,16 +40,14 @@ function node_limit_user_schema() {
      */
     'primary key' => array('lid', 'uid')
   );
-  
+
   return $schema;
 }
 
 
 /*
- * Implementation of hook_uninstall
+ * Implementation of hook_uninstall().
  */
 function node_limit_user_uninstall() {
-	drupal_uninstall_schema('node_limit_user');
+  drupal_uninstall_schema('node_limit_user');
 }
-
-?>

@@ -1,11 +1,18 @@
 <?php
+// $Id$
+
+/**
+ * @file
+ * Installation functions for module node_limit.
+ */
 
 define("NODE_LIMIT_NO_LIMIT", -1);
+
 /**
  * Implementation of hook_install().
  */
 function node_limit_install() {
-	drupal_install_schema('node_limit');
+  drupal_install_schema('node_limit');
 }
 
 /**
@@ -49,15 +56,13 @@ function node_limit_schema() {
     ),
     'primary key' => array('lid')
   );
-	return $schema;
+  return $schema;
 }
 
 
 /*
- * Implementation of hook_uninstall
+ * Implementation of hook_uninstall().
  */
 function node_limit_uninstall() {
-	drupal_uninstall_schema('node_limit');
+  drupal_uninstall_schema('node_limit');
 }
-
-?>

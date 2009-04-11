@@ -1,10 +1,17 @@
 <?php
+// $Id$
+
+/**
+ * @file
+ * Installation functions for module node_limit_role.
+ */
+
 /**
  * Implementation of hook_install().
  */
 function node_limit_role_install() {
-	db_query("DROP TABLE IF EXISTS {node_limit_role}");
-	drupal_install_schema('node_limit_role');
+  db_query("DROP TABLE IF EXISTS {node_limit_role}");
+  drupal_install_schema('node_limit_role');
 }
 
 /**
@@ -33,16 +40,14 @@ function node_limit_role_schema() {
      */
     'primary key' => array('lid', 'rid')
   );
-  
+
   return $schema;
 }
 
 
-/*
- * Implementation of hook_uninstall
+/**
+ * Implementation of hook_uninstall().
  */
 function node_limit_role_uninstall() {
-	drupal_uninstall_schema('node_limit_role');
+  drupal_uninstall_schema('node_limit_role');
 }
-
-?>
