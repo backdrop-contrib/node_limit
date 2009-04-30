@@ -1,5 +1,5 @@
 name = Node Limit User
 description = Allows admins to apply a Node Limit to an individual user
-package = Access control
+package = Node Limit
 dependencies[] = node_limit
 core = 6.x

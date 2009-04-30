@@ -14,8 +14,6 @@ define("NODE_LIMIT_LIMIT_DOESNT_APPLY", 0);
 define("NODE_LIMIT_LIMIT_DOES_APPLY", 1);
 define("NODE_LIMIT_LIMIT_NEUTRAL", 2);
 
-define("NODE_LIMIT_ANY_CONTENT_TYPE", "--any--");
-
 /**
  * Implementation of hook_perm().
  */
@@ -61,6 +59,13 @@ function node_limit_menu() {
     'access arguments' => array(NODE_LIMIT_PERM_ADMIN),
     'type' => MENU_CALLBACK
   );
+  $items['admin/user/node_limit/%node_limit/clone'] = array(
+    'title' => t('Clone Node Limit'),
+    'page callback' => 'node_limit_clone_limit',
+    'page arguments' => array(3),
+    'access arguments' => array(NODE_LIMIT_PERM_ADMIN),
+    'type' => MENU_CALLBACK
+  );
 
   return $items;
 }
@@ -97,23 +102,9 @@ function node_limit_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
       drupal_goto('node/add');
     }
   }
-}
-
-/**
- * Implementation of hook_node_type().
- *
- * Delete all rules related to the node type being deleted.
- */
-function node_limit_node_type($op, $type) {
-  switch ($op) {
-    case 'delete':
-      $sql = "DELETE FROM {node_limit} WHERE type = '%s'";
-      db_query($sql, $type->type);
-      $num = db_affected_rows();
-      if ($num > 0) {
-        drupal_set_message(t('Deleted !num limit rules.', array('!num' => $num)));
-      }
-      break;
+  else if ($op == 'validate') {
+    print_r($node);
+    die();
   }
 }
 
@@ -157,9 +148,7 @@ function _node_limit_sql($lid) {
   $sql = "SELECT COUNT(n.nid) AS number FROM {node} AS n";
   $components = module_invoke_all('node_limit_sql', $lid);
   $limit = node_limit_load($lid);
-  if ($limit['type'] != NODE_LIMIT_ANY_CONTENT_TYPE) {
-    $components['where'][] = sprintf("n.type = '%s'", $limit['type']);
-  }
+  
   $joins = (isset($components['join']) ? implode(' ', $components['join']) : '');
   $wheres = (isset($components['where']) ? 'WHERE '. implode(' AND ', $components['where']) : '');
 
@@ -174,9 +163,8 @@ function _node_limit_sql($lid) {
  */
 function node_limit_limits(&$node) {
   $user = user_load($node->uid);
-  //get all the limits that apply to this type:
-  $sql = "SELECT lid FROM {node_limit} WHERE `type`='%s' OR `type`='%s' ORDER BY weight ASC";
-  $res = db_query($sql, $node->type, NODE_LIMIT_ANY_CONTENT_TYPE);
+  //get all the limits:
+  $res = db_query("SELECT lid FROM {node_limit} ORDER BY weight ASC");
   $applicable_limits = array();
   while ($l = db_fetch_array($res)) {
     // This particular limit id.
@@ -206,7 +194,6 @@ function node_limit_limits(&$node) {
 function theme_node_limit_list_limits($form) {
   $header = array(
     t('Title'),
-    t('Content Type'),
     t('Limit'),
     t('Weight'),
     t('Actions')
@@ -216,7 +203,6 @@ function theme_node_limit_list_limits($form) {
     $row = array();
     $form['limits'][$lid]['weight']['#attributes']['class'] = 'node_limit-weight';
     $row[] = drupal_render($form['limits'][$lid]['title']);
-    $row[] = drupal_render($form['limits'][$lid]['type']);
     $row[] = drupal_render($form['limits'][$lid]['limit']);
     $row[] = drupal_render($form['limits'][$lid]['weight']);
     $row[] = drupal_render($form['limits'][$lid]['actions']);
@@ -247,7 +233,6 @@ function node_limit_list_limits() {
 
   $form = array('#tree' => TRUE);
   $form['limits'] = array();
-  $types = _node_limit_content_types();
   $sql = "SELECT * FROM {node_limit} ORDER BY weight ASC";
   $res = db_query($sql);
   $limit_count = 0;
@@ -261,14 +246,13 @@ function node_limit_list_limits() {
     $form['limits'][$rec['lid']]['title'] = array(
       '#value' => $rec['title']
     );
-    $form['limits'][$rec['lid']]['type'] = array(
-      '#value' => $types[$rec['type']]
-    );
     $form['limits'][$rec['lid']]['limit'] = array(
       '#value' => $rec['limit']
     );
     $form['limits'][$rec['lid']]['actions'] = array(
-      '#value' => l(t('Edit'), 'admin/user/node_limit/'. $rec['lid']) .' '. l(t('Delete'), 'admin/user/node_limit/'. $rec['lid'] .'/delete')
+      '#value' => l(t('Edit'), 'admin/user/node_limit/'. $rec['lid']) .' '. 
+                  l(t('Delete'), 'admin/user/node_limit/'. $rec['lid'] .'/delete') .' '.
+                  l(t('Clone'), 'admin/user/node_limit/'.$rec['lid'] .'/clone')
     );
   }
 
@@ -339,7 +323,6 @@ function node_limit_limit_form(&$form_state, $limit) {
   if ($limit == FALSE) {
     $limit = array();
   }
-  $types = _node_limit_content_types();
   $form = array();
   $form['#tree'] = TRUE;
   if ($limit['lid'] > 0) {
@@ -356,21 +339,17 @@ function node_limit_limit_form(&$form_state, $limit) {
     '#required' => TRUE,
     '#description' => t('The description for this Node Limit')
   );
-  $form['info']['type'] = array(
-    '#title' => t('Content Type'),
-    '#type' => 'select',
-    '#options' => $types,
-    '#required' => TRUE,
-    '#default_value' => $limit['type'],
-    '#description' => t('The content type to which this limit applies')
-  );
   $form['info']['limit'] = array(
     '#title' => t('Limit'),
     '#type' => 'textfield',
     '#default_value' => (isset($limit['limit']) ? $limit['limit'] : NODE_LIMIT_NO_LIMIT),
-    '#size' => 20,
+    '#size' => 10,
     '#required' => TRUE,
     '#description' => t('The number of nodes for this limit.  Must be an integer greater than 0 or %nolimit for no limit', array('%nolimit' => NODE_LIMIT_NO_LIMIT))
+  );
+  $form['info']['weight'] = array(
+    '#type' => 'hidden',
+    '#value' => $limit['weight']
   );
 
   $elements = module_invoke_all('node_limit_element', $limit['lid']);
@@ -436,22 +415,26 @@ function node_limit_limit_form_validate($form_id, &$form_state) {
 function node_limit_limit_form_submit($form_id, &$form_state) {
   if (isset($form_state['values']['lid'])) {
     $lid = $form_state['values']['lid'];
-    db_query("DELETE FROM {node_limit} WHERE `lid`='%d'", $lid);
   }
   else {
     $lid = _node_limit_next_limit_id();
   }
-  $type = $form_state['values']['info']['type'];
-  $limit = intval($form_state['values']['info']['limit']);
-  $title = $form_state['values']['info']['title'];
+  $limit = array();
+  $limit['lid'] = $lid;
+  $limit['limit'] = intval($form_state['values']['info']['limit']);
+  $limit['title'] = $form_state['values']['info']['title'];
+  $limit['weight'] = $form_state['values']['info']['weight'];
 
-  db_query("INSERT INTO {node_limit} VALUES('%d', '%s', '%d', '%s', '0')", $lid, $type, $limit, $title);
   foreach ($form_state['values']['node_limit_elements'] as $module => $element) {
-    module_invoke($module, 'node_limit_element_submit', $lid, $element['applies'], $element['element']);
+    if ($element['applies']) {
+      $limit[$module] = $element['element'];
+    }
   }
+  
+  node_limit_save($limit);
 
   $form_state['redirect'] = 'admin/user/node_limit';
-  drupal_set_message(t('Added limit "%limit"', array('%limit' => $title)));
+  drupal_set_message(t('Saved limit "%limit"', array('%limit' => $limit['title'])));
 }
 
 /**
@@ -475,9 +458,20 @@ function node_limit_delete_form(&$form_state, $limit) {
  */
 function node_limit_delete_form_submit($form_id, &$form_state) {
   $lid = $form_state['values']['lid'];
-  db_query("DELETE FROM {node_limit} WHERE lid='%d'", $lid);
-  module_invoke_all('node_limit_delete', $lid);
+  node_limit_delete($lid);
   $form_state['redirect'] = 'admin/user/node_limit';
+}
+
+/**
+ * Callback to clone a limit.
+ */
+function node_limit_clone_limit($limit) {
+  $old_title = $limit['title'];
+  $limit['lid'] = _node_limit_next_limit_id();
+  $limit['title'] = t('Clone of !title', array('!title' => $old_title));
+  node_limit_save($limit);
+  drupal_set_message(t('Cloned limit "%limit"', array('%limit' => $old_title)));
+  drupal_goto('admin/user/node_limit');
 }
 
 /**
@@ -489,24 +483,12 @@ function _node_limit_next_limit_id() {
 }
 
 /**
- * Returns an array of available content types.
- */
-function _node_limit_content_types() {
-  $types = array(NODE_LIMIT_ANY_CONTENT_TYPE => t('--Any--'));
-  $content_types = node_get_types('types');
-  foreach ($content_types as $type) {
-    $types[$type->type] = $type->name;
-  }
-  return $types;
-}
-
-/**
  * Loads a node limit.
  *
  * @param $lid
  *   The limit id.
  * @return
- *   FALSE if the limit couldn't be loaded otherwise the limit rule.
+ *   FALSE if the limit couldn't be loaded; otherwise the limit rule.
  */
 function node_limit_load($lid) {
   if (!is_numeric($lid)) {
@@ -522,5 +504,24 @@ function node_limit_load($lid) {
   }
   else {
     return FALSE;
+  }
+}
+
+function node_limit_delete($lid) {
+  db_query("DELETE FROM {node_limit} WHERE `lid`='%d'", $lid);
+  module_invoke_all('node_limit_delete', $lid);
+}
+
+/**
+ * Callback to save a node limit back to the database.
+ */
+function node_limit_save($limit) {
+  node_limit_delete($limit['lid']);
+
+  db_query("INSERT INTO {node_limit} VALUES('%d', '%d', '%s', '%d')", $limit['lid'], $limit['limit'], $limit['title'], $limit['weight']);
+  drupal_set_message(print_r($limit, true));
+  $modules = module_implements('node_limit_save');
+  foreach ($modules as $module) {
+    module_invoke($module, 'node_limit_save', $limit['lid'], isset($limit[$module]), $limit[$module]);
   }
 }

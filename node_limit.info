@@ -1,4 +1,4 @@
 name = Node Limit
-description = Allows admins to restrict the number of nodes a user or role may create.
-package = Access control
+description = Allows admins to restrict the number of nodes that may be created.
+package = Node Limit
 core = 6.x

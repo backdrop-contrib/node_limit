@@ -87,16 +87,11 @@ function node_limit_role_node_limit_element_validate($element) {
 }
 
 /**
- * Implementation of hook_node_limit_element_submit().
+ * Implementation of hook_node_limit_save().
  */
-function node_limit_role_node_limit_element_submit($lid, $applies, $element) {
-  // $element contains the rid of the role.
-  $rid = $element;
-  // If they're editing, then this limit already exists.
-  // Therefore it has to be deleted before it can be resaved.
-  node_limit_role_node_limit_delete($lid);
+function node_limit_role_node_limit_save($lid, $applies, $element) {
   if ($applies) {
-    db_query("INSERT INTO {node_limit_role} VALUES('%d', '%d')", $lid, $rid);
+    db_query("INSERT INTO {node_limit_role} VALUES('%d', '%d')", $lid, $element);
   }
 }
 

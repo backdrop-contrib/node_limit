@@ -11,6 +11,7 @@
   define("NODE_LIMIT_INTERVAL_HOURS", "3600");
   define("NODE_LIMIT_INTERVAL_DAYS", "86400");
   define("NODE_LIMIT_INTERVAL_WEEKS", "604800");
+  define("NODE_LIMIT_INTERVAL_MONTHS", "2419200");
   define("NODE_LIMIT_INTERVAL_YEARS", "31536000");
 
 /**
@@ -32,8 +33,15 @@ function node_limit_interval_node_limit_sql($lid) {
   if (empty($limit)) {
     return array();
   }
-  $interval = floatval($limit['node_limit_interval']['interval']) *
-              intval($limit['node_limit_interval']['unit']);
+  if ($limit['node_limit_interval'] != NODE_LIMIT_INTERVAL_MONTHS) {
+    $interval = floatval($limit['node_limit_interval']['interval']) *
+                intval($limit['node_limit_interval']['unit']);
+  }
+  else {
+    $then = mktime(date('H'), date('i'), date('s'), date('n')-floatval($limit['node_limit_interval']['interval']));
+    $now = mktime();
+    $interval = $now - $then;
+  }
   return array(
     'where' => array(
       sprintf('n.created + %d >= %d', $interval, time())
@@ -47,7 +55,10 @@ function node_limit_interval_node_limit_sql($lid) {
 function node_limit_interval_node_limit_render_element(&$element) {
   $title = $element['interval']['#title'];
   unset($element['interval']['#title']);
-  return '<table><tr><td>'. $title .'</td><td>'. drupal_render($element['interval']) .'</td><td>'. drupal_render($element['unit']) .'</td></tr></table>';
+  $interval = drupal_render($element['interval']);
+  $unit = drupal_render($element['unit']);
+  $html = str_replace('div', 'span', $title . $interval . $unit);
+  return $html;
 }
 
 /**
@@ -63,8 +74,7 @@ function node_limit_interval_node_limit_element($lid = 0) {
       'interval' => array(
         '#type' => 'textfield',
         '#title' => t('Within the past'),
-        '#size' => 20,
-        '#description' => t('The time interval for this limit.  Must be a number greater than 0.'),
+        '#size' => 10,
         '#default_value' => $limit['node_limit_interval']['interval']
       ),
       'unit' => array(
@@ -84,6 +94,7 @@ function _node_limit_interval_interval_options() {
     NODE_LIMIT_INTERVAL_HOURS => t($names[NODE_LIMIT_INTERVAL_HOURS]),
     NODE_LIMIT_INTERVAL_DAYS => t($names[NODE_LIMIT_INTERVAL_DAYS]),
     NODE_LIMIT_INTERVAL_WEEKS => t($names[NODE_LIMIT_INTERVAL_WEEKS]),
+    NODE_LIMIT_INTERVAL_MONTHS => t($names[NODE_LIMIT_INTERVAL_MONTHS]),
     NODE_LIMIT_INTERVAL_YEARS => t($names[NODE_LIMIT_INTERVAL_YEARS]),
   );
 }
@@ -95,6 +106,7 @@ function _node_limit_interval_interval_names() {
     NODE_LIMIT_INTERVAL_HOURS => 'Hours',
     NODE_LIMIT_INTERVAL_DAYS => 'Days',
     NODE_LIMIT_INTERVAL_WEEKS => 'Weeks',
+    NODE_LIMIT_INTERVAL_MONTHS => 'Months',
     NODE_LIMIT_INTERVAL_YEARS => 'Years',
   );
 }
@@ -119,16 +131,13 @@ function node_limit_interval_node_limit_element_validate($element) {
 }
 
 /**
- * Implementation of hook_node_limit_element_submit().
+ * Implementation of hook_node_limit_save().
  */
-function node_limit_interval_node_limit_element_submit($lid, $applies, $element) {
-  // If they're editing, then this limit already exists
-  // Therefore it has to be deleted before it can be resaved
-  node_limit_interval_node_limit_delete($lid);
+function node_limit_interval_node_limit_save($lid, $applies, $element) {
   if ($applies) {
     $interval = intval($element['interval']);
-    $unit = $element['unit'];
-    db_query("INSERT INTO {node_limit_interval} VALUES('%d', '%d', '%s')", $lid, $interval, $unit);
+    $unit = intval($element['unit']);
+    db_query("INSERT INTO {node_limit_interval} VALUES('%d', '%d', '%d')", $lid, $interval, $unit);
   }
 }
 
