@@ -2,4 +2,7 @@ name = Node Limit User
 description = Allows admins to apply a Node Limit to an individual user
 package = Node Limit
 dependencies[] = node_limit
-core = 6.x
+core = 7.x
+
+files[] = node_limit_user.install
+files[] = node_limit_user.module
