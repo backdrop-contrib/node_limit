@@ -1,5 +1,5 @@
 <?php
-
+// $Id$
 /**
  * @file
  * Module to restrict the number of nodes by role.
@@ -8,7 +8,7 @@
 /**
  * Implementation of hook_node_limit_applies_in_context().
  */
-function node_limit_role_node_limit_applies_in_context($lid, &$node, &$user) {
+function node_limit_role_node_limit_applies_in_context($lid, $node, $user) {
   $limit = node_limit_role_node_limit_load($lid);
   if (empty($limit)) {
     return NODE_LIMIT_LIMIT_NEUTRAL;
@@ -22,34 +22,14 @@ function node_limit_role_node_limit_applies_in_context($lid, &$node, &$user) {
 /**
  * Implementation of hook_node_limit_sql().
  */
-function node_limit_role_node_limit_sql($lid) {
+function node_limit_role_node_limit_sql($lid, SelectQuery $select) {
   $limit = node_limit_role_node_limit_load($lid);
-  if (empty($limit)) {
-    return array();
-  }
-  // Have to do something different for DRUPAL_AUTHENTICATED_RID,
-  // DRUPAL_ANONYMOUS_RID, and everything else.
-  if ($limit['node_limit_role']['rid'] == DRUPAL_AUTHENTICATED_RID) {
-    return array(
-      'where' => array(
-        'n.uid > 0'
-      )
-    );
-  }
-  else if ($limit['node_limit_role']['rid'] == DRUPAL_ANONYMOUS_RID) {
-    return array(
-      'where' => array(
-        'n.uid = 0'
-      )
-    );
-  }
-  else {
-    return array(
-      'where' => array(
-        sprintf("n.uid IN (SELECT uid FROM {users_roles} WHERE rid = '%d')", $limit['node_limit_role']['rid'])
-      )
-    );
-  }
+  if (empty($limit)) return;
+  
+  $subselect = db_select('users_roles', 'ur')
+    ->fields('ur', array('uid'))
+    ->condition('rid', $limit['node_limit_role']['rid']);
+  $select->condition('uid', $subselect, 'IN');
 }
 
 /**
@@ -57,14 +37,21 @@ function node_limit_role_node_limit_sql($lid) {
  */
 function node_limit_role_node_limit_element($lid = 0) {
   $limit = node_limit_role_node_limit_load($lid);
-  return array(
-    'node_limit_role' => array(
-      '#type' => 'select',
-      '#title' => t('Role'),
-      '#options' => user_roles(),
-      '#default_value' => $limit['node_limit_role']['rid']
-    )
-  );
+  $rid = !empty($limit['node_limit_role']['rid']) ? $limit['node_limit_role']['rid'] : '';
+  
+  $roles = user_roles(true);
+  unset($roles[DRUPAL_AUTHENTICATED_RID]);
+  
+  if (!empty($roles)) {
+    return array(
+      'node_limit_role' => array(
+        '#type' => 'select',
+        '#title' => t('Role'),
+        '#options' => $roles,
+        '#default_value' => $rid
+      )
+    );
+  }
 }
 
 /**
@@ -90,7 +77,12 @@ function node_limit_role_node_limit_element_validate($element) {
  */
 function node_limit_role_node_limit_save($lid, $applies, $element) {
   if ($applies) {
-    db_query("INSERT INTO {node_limit_role} VALUES('%d', '%d')", $lid, $element);
+    db_insert('node_limit_role')
+      ->fields(array(
+        'lid' => $lid,
+        'rid' => $element,
+      ))
+      ->execute();
   }
 }
 
@@ -98,16 +90,23 @@ function node_limit_role_node_limit_save($lid, $applies, $element) {
  * Implementation of hook_node_limit_delete().
  */
 function node_limit_role_node_limit_delete($lid) {
-  db_query("DELETE FROM {node_limit_role} WHERE `lid`='%d'", $lid);
+  db_delete('node_limit_role')
+    ->condition('lid', $lid)
+    ->execute();
 }
 
 /**
  * Implementation of hook_node_limit_load().
  */
 function node_limit_role_node_limit_load($lid) {
-  $sql = "SELECT nlr.*, r.name FROM {node_limit_role} AS nlr INNER JOIN {role} AS r ON (r.rid=nlr.rid) WHERE lid = '%d'";
-  $info = db_fetch_array(db_query($sql, $lid));
-  if (intval($info['rid']) == 0) {
+  $select = db_select('node_limit_role', 'nlr');
+  $select->join('role', 'r', 'r.rid = nlr.rid');
+  $select->fields('nlr')
+    ->fields('r', array('name'))
+    ->condition('lid', $lid);
+
+  $info = $select->execute()->fetchAssoc();
+  if (empty($info['rid'])) {
     return array();
   }
   return array(
