@@ -1,5 +1,5 @@
 <?php
-
+// $Id$
 /**
  * @file
  * Module to restrict the number of nodes within a time interval.
@@ -16,7 +16,7 @@
 /**
  * Implementation of hook_node_limit_applies_in_context().
  */
-function node_limit_interval_node_limit_applies_in_context($lid, &$node, &$user) {
+function node_limit_interval_node_limit_applies_in_context($lid, $node, $user) {
   $limit = node_limit_interval_node_limit_load($lid);
   if (empty($limit)) {
     return NODE_LIMIT_LIMIT_NEUTRAL;
@@ -27,11 +27,10 @@ function node_limit_interval_node_limit_applies_in_context($lid, &$node, &$user)
 /**
  * Implementation of hook_node_limit_sql().
  */
-function node_limit_interval_node_limit_sql($lid) {
+function node_limit_interval_node_limit_sql($lid, SelectQuery $select) {
   $limit = node_limit_interval_node_limit_load($lid);
-  if (empty($limit)) {
-    return array();
-  }
+  if (empty($limit)) return;
+  
   if ($limit['node_limit_interval'] != NODE_LIMIT_INTERVAL_MONTHS) {
     $interval = floatval($limit['node_limit_interval']['interval']) *
                 intval($limit['node_limit_interval']['unit']);
@@ -41,11 +40,7 @@ function node_limit_interval_node_limit_sql($lid) {
     $now = mktime();
     $interval = $now - $then;
   }
-  return array(
-    'where' => array(
-      sprintf('n.created + %d >= %d', $interval, time())
-    )
-  );
+  $select->where('created + :interval >= :reference', array(':interval' => $interval, ':reference' => REQUEST_TIME));
 }
 
 /**
@@ -66,6 +61,9 @@ function node_limit_interval_node_limit_render_element(&$element) {
 function node_limit_interval_node_limit_element($lid = 0) {
   $limit = node_limit_interval_node_limit_load($lid);
   $interval_options = _node_limit_interval_interval_options();
+  
+  $interval = !empty($limit['node_limit_interval']['interval']) ? $limit['node_limit_interval']['interval'] : '';
+  $unit = !empty($limit['node_limit_interval']['unit']) ? $limit['node_limit_interval']['unit'] : '';
   return array(
     'node_limit_interval' => array(
       '#title' => t('Time Interval'),
@@ -74,12 +72,12 @@ function node_limit_interval_node_limit_element($lid = 0) {
         '#type' => 'textfield',
         '#title' => t('Within the past'),
         '#size' => 10,
-        '#default_value' => $limit['node_limit_interval']['interval']
+        '#default_value' => $interval
       ),
       'unit' => array(
         '#type' => 'select',
         '#options' => $interval_options,
-        '#default_value' => $limit['node_limit_interval']['unit']
+        '#default_value' => $unit
       )
     )
   );
@@ -136,7 +134,13 @@ function node_limit_interval_node_limit_save($lid, $applies, $element) {
   if ($applies) {
     $interval = intval($element['interval']);
     $unit = intval($element['unit']);
-    db_query("INSERT INTO {node_limit_interval} VALUES('%d', '%d', '%d')", $lid, $interval, $unit);
+    db_insert('node_limit_interval')
+      ->fields(array(
+        'lid' => $lid,
+        'interval_value' => $interval,
+        'unit' => $unit,
+      ))
+      ->execute();
   }
 }
 
@@ -144,21 +148,26 @@ function node_limit_interval_node_limit_save($lid, $applies, $element) {
  * Implementation of hook_node_limit_delete().
  */
 function node_limit_interval_node_limit_delete($lid) {
-  db_query("DELETE FROM {node_limit_interval} WHERE `lid`='%d'", $lid);
+  db_delete('node_limit_interval')
+    ->condition('lid', $lid)
+    ->execute();
 }
 
 /**
  * Implementation of hook_node_limit_load().
  */
 function node_limit_interval_node_limit_load($lid) {
-  $sql = "SELECT * FROM {node_limit_interval} WHERE `lid` = '%d'";
-  $info = db_fetch_array(db_query($sql, $lid));
-  if (intval($info['lid']) == 0) {
+  $select = db_select('node_limit_interval', 'nti')
+    ->fields('nti')
+    ->condition('lid', $lid);
+    
+  $info = $select->execute()->fetchAssoc();
+  if (empty($info['lid'])) {
     return array();
   }
   return array(
     'node_limit_interval' => array(
-      'interval' => $info['interval'],
+      'interval' => $info['interval_value'],
       'unit' => $info['unit']
     )
   );
