@@ -1,5 +1,5 @@
 <?php
-
+// $Id$
 /**
  * @file
  * Module to restrict the number of nodes by content type.
@@ -14,8 +14,9 @@ function node_limit_type_node_type($op, $info) {
   switch ($op) {
     case 'delete':
       $sql = "DELETE FROM {node_limit_type} WHERE type = '%s'";
-      db_query($sql, $info->type);
-      $num = db_affected_rows();
+      $num = db_delete('node_limit_type')
+        ->condition('type', $info->type)
+        ->execute();
       if ($num > 0) {
         drupal_set_message(t('Deleted !num limit rules.', array('!num' => $num)));
       }
@@ -26,7 +27,7 @@ function node_limit_type_node_type($op, $info) {
 /**
  * Implementation of hook_node_limit_applies_in_context().
  */
-function node_limit_type_node_limit_applies_in_context($lid, &$node, &$user) {
+function node_limit_type_node_limit_applies_in_context($lid, $node, $user) {
   $limit = node_limit_type_node_limit_load($lid);
   if (empty($limit)) {
     return NODE_LIMIT_LIMIT_NEUTRAL;
@@ -40,16 +41,11 @@ function node_limit_type_node_limit_applies_in_context($lid, &$node, &$user) {
 /**
  * Implementation of hook_node_limit_sql().
  */
-function node_limit_type_node_limit_sql($lid) {
+function node_limit_type_node_limit_sql($lid, SelectQuery $select) {
   $limit = node_limit_type_node_limit_load($lid);
-  if (empty($limit)) {
-    return array();
-  }
-  return array(
-    'where' => array(
-      sprintf("n.type = '%s'", $limit['node_limit_type'])
-    )
-  );
+  if (empty($limit)) return;
+  
+  $select->condition('type', $limit['node_limit_type']);
 }
 
 /**
@@ -83,7 +79,12 @@ function node_limit_type_node_limit_element_validate($element) {
 function node_limit_type_node_limit_save($lid, $applies, $element) {
   drupal_set_message(print_r($element, true));
   if ($applies) {
-    db_query("INSERT INTO {node_limit_type} VALUES('%d', '%s')", $lid, $element);
+    db_insert('node_limit_type')
+      ->fields(array(
+        'lid' => $lid,
+        'type' => $element,
+      ))
+      ->execute();
   }
 }
 
@@ -91,16 +92,21 @@ function node_limit_type_node_limit_save($lid, $applies, $element) {
  * Implementation of hook_node_limit_delete().
  */
 function node_limit_type_node_limit_delete($lid) {
-  db_query("DELETE FROM {node_limit_type} WHERE `lid`='%d'", $lid);
+  db_delete('node_limit_type')
+    ->condition('lid', $lid)
+    ->execute();
 }
 
 /**
  * Implementation of hook_node_limit_load().
  */
 function node_limit_type_node_limit_load($lid) {
-  $sql = "SELECT * FROM {node_limit_type} WHERE `lid` = '%d'";
-  $info = db_fetch_array(db_query($sql, $lid));
-  if (intval($info['lid']) == 0) {
+  $select = db_select('node_limit_type', 'nlt')
+    ->fields('nlt')
+    ->condition('lid', $lid);
+
+  $info = $select->execute()->fetchAssoc();
+  if (empty($info['lid'])) {
     return array();
   }
   return array('node_limit_type' => $info['type']);
@@ -111,7 +117,7 @@ function node_limit_type_node_limit_load($lid) {
  */
 function _node_limit_type_content_types() {
   $types = array();
-  $content_types = node_get_types('types');
+  $content_types = node_type_get_types();
   foreach ($content_types as $type) {
     $types[$type->type] = $type->name;
   }
