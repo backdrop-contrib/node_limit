@@ -32,10 +32,7 @@ HOOKS FOR SUBMODULES:
   
 - hook_node_limit_element_validate($element):
   called when the user attempts to add or edit a Node Limit.  The implementor of the hook has the opportunity to validate the value the user entered.
-  
-- hook_node_limit_element_submit($lid, $applies, $element):
-  called when the user adds or edits a Node Limit (and has passed validation).  The implementor of the hook has the opportunity to save the user-entered value based on the passed Node Limit id.  $applies == true iff the limit uses this limitation.  Otherwise the submodule should delete the limitation from its table.
-  
+
 - hook_node_limit_load($lid):
   Called when node_limit loads a limit from the database.  The implementor should return an array with a single key-value pair.  The key must be the name of the submodule, and the value is an array containing 
   

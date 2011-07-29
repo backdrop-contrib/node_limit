@@ -1,4 +1,7 @@
 name = Node Limit
 description = Allows admins to restrict the number of nodes that may be created.
 package = Node Limit
-core = 6.x
+core = 7.x
+
+files[] = node_limit.install
+files[] = node_limit.module
