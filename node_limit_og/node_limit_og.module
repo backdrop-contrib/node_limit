@@ -1,13 +1,14 @@
 <?php
-
+// $Id$
 /**
  * @file
  * Module to restrict the number of nodes within an organic group.
+ */
 
 /**
  * Implementation of hook_node_limit_applies_in_context().
  */
-function node_limit_og_node_limit_applies_in_context($lid, &$node, &$user) {
+function node_limit_og_node_limit_applies_in_context($lid, $node, $user) {
   //TODO
   //return DOES_APPLY iff the $node is being created in this limit's group
   //return NEUTRAL iff the $node is for an OG, but not this OG
@@ -22,18 +23,15 @@ function node_limit_og_node_limit_applies_in_context($lid, &$node, &$user) {
 /**
  * Implementation of hook_node_limit_sql().
  */
-function node_limit_og_node_limit_sql($lid) {
+function node_limit_og_node_limit_sql($lid, SelectQuery $select) {
   $limit = node_limit_og_node_limit_load($lid);
-  if (empty($limit)) {
-    return array();
-  }
-  //TODO
+  if (empty($limit)) return;
 
-  return array(
-    'where' => array(
-      sprintf('n.nid IN (SELECT og.nid FROM {og_ancestry} AS og WHERE og.group_nid = \'%d\')', $limit['node_limit_og'])
-    )
-  );
+  $subselect = db_select('field_data_group_audience', 'fdga')
+    ->fields('fdga', array('entity_id'))
+    ->condition('group_audience_gid', $limit['node_limit_og'])
+    ->condition('entity_type', 'node');
+  $select->condition('nid', $subselect, 'IN');
 }
 
 /**
@@ -41,12 +39,19 @@ function node_limit_og_node_limit_sql($lid) {
  */
 function node_limit_og_node_limit_element($lid = 0) {
   $limit = node_limit_og_node_limit_load($lid);
+  
+  $groups = array();
+  foreach (og_load_multiple(og_get_all_group()) as $group) {
+    $groups[$group->gid] = $group->label;
+  }
+  
+  $group = !empty($limit['node_limit_og']) ? $limit['node_limit_og'] : '';
   return array(
     'node_limit_og' => array(
       '#title' => t('Organic Group'),
       '#type' => 'select',
-      '#options' => og_all_groups_options(),
-      '#default_value' => $limit['node_limit_og']
+      '#options' => $groups,
+      '#default_value' => $group
     )
   );
 }
@@ -67,7 +72,12 @@ function node_limit_og_node_limit_element_validate($element) {
  */
 function node_limit_og_node_limit_save($lid, $applies, $element) {
   if ($applies) {
-    db_query("INSERT INTO {node_limit_og} VALUES('%d', '%d')", $lid, $element);
+    db_insert('node_limit_og')
+      ->fields(array(
+        'lid' => $lid,
+        'ogid' => $element,
+      ))
+      ->execute();
   }
 }
 
@@ -75,15 +85,20 @@ function node_limit_og_node_limit_save($lid, $applies, $element) {
  * Implementation of hook_node_limit_delete().
  */
 function node_limit_og_node_limit_delete($lid) {
-  db_query("DELETE FROM {node_limit_og} WHERE `lid`='%d'", $lid);
+  db_delete('node_limit_og')
+    ->condition('lid', $lid)
+    ->execute();
 }
 
 /**
  * Implementation of hook_node_limit_load().
  */
 function node_limit_og_node_limit_load($lid) {
-  $sql = "SELECT * FROM {node_limit_og} WHERE `lid` = '%d'";
-  $info = db_fetch_array(db_query($sql, $lid));
+  $select = db_select('node_limit_og', 'nlo')
+    ->fields('nlo')
+    ->condition('lid', $lid);
+  
+  $info = $select->execute()->fetchAssoc();
   if (intval($info['lid']) == 0) {
     return array();
   }

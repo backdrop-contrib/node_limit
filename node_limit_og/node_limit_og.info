@@ -3,4 +3,7 @@ description = Allows admins to apply a Node Limit to an organic group
 package = Node Limit
 dependencies[] = node_limit
 dependencies[] = og
-core = 6.x
+core = 7.x
+
+files[] = node_limit_og.install
+files[] = node_limit_og.module
