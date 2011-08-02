@@ -54,12 +54,13 @@ function node_limit_type_node_limit_sql($lid, SelectQuery $select) {
 function node_limit_type_node_limit_element($lid = 0) {
   $limit = node_limit_type_node_limit_load($lid);
   $types = _node_limit_type_content_types();
+  $type = !empty($limit['node_limit_type']) ? $limit['node_limit_type'] : '';
   return array(
     'node_limit_type' => array(
       '#type' => 'select',
       '#title' => t('Content Type'),
       '#options' => $types,
-      '#default_value' => $limit['node_limit_type']
+      '#default_value' => $type
     )
   );
 }
