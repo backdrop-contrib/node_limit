@@ -5,7 +5,7 @@
  * Module to restrict the number of nodes a user or role may create.
  */
 
-define("NODE_LIMIT_NO_LIMIT", -1);
+if (!defined("NODE_LIMIT_NO_LIMIT")) define("NODE_LIMIT_NO_LIMIT", -1);
 
 define("NODE_LIMIT_PERM_ADMIN", "administer node limits");
 
