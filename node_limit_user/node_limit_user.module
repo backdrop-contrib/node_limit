@@ -48,12 +48,13 @@ function node_limit_user_node_limit_sql($lid, SelectQuery $select) {
  */
 function node_limit_user_node_limit_element($lid = 0) {
   $limit = node_limit_user_node_limit_load($lid);
+  $name = !empty($limit['node_limit_user']['name']) ? $limit['node_limit_user']['name'] : '';
   return array(
     'node_limit_user' => array(
       '#type' => 'textfield',
       '#title' => t('User'),
       '#autocomplete_path' => 'user/autocomplete',
-      '#default_value' => $limit['node_limit_user']['name']
+      '#default_value' => $name
     )
   );
 }
