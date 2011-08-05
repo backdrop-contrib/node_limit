@@ -137,7 +137,7 @@ function node_limit_interval_node_limit_save($lid, $applies, $element) {
     db_insert('node_limit_interval')
       ->fields(array(
         'lid' => $lid,
-        'interval_value' => $interval,
+        'ninterval' => $interval,
         'unit' => $unit,
       ))
       ->execute();
@@ -167,7 +167,7 @@ function node_limit_interval_node_limit_load($lid) {
   }
   return array(
     'node_limit_interval' => array(
-      'interval' => $info['interval_value'],
+      'interval' => $info['ninterval'],
       'unit' => $info['unit']
     )
   );
