@@ -68,14 +68,21 @@ function node_limit_update_6001() {
  * Renaming limit field to avoid mysql restricted name usage
  */
 function node_limit_update_7001() {
+  // Cannot use db_change_field() because of the restricted name
   $ret = db_query("ALTER TABLE {node_limit} CHANGE `limit` `limit_count` INT(11) NOT NULL DEFAULT '-1' COMMENT 'The node limit for this limit'");
   return !empty($ret);
 }
 
 /**
- * Renaming limit field to avoid mysql restricted name usage
+ * Renaming limit_count field to keep names consistency
  */
 function node_limit_update_7002() {
-  $ret = db_query("ALTER TABLE {node_limit} CHANGE `limit_count` `nlimit` INT(11) NOT NULL DEFAULT '-1' COMMENT 'The node limit for this limit'");
+  $ret = db_change_field('node_limit', 'limit_count', 'nlimit', 
+    array(
+      'description' => 'The node limit for this limit',
+      'type' => 'int',
+      'not null' => TRUE,
+      'default' => NODE_LIMIT_NO_LIMIT
+    ));
   return !empty($ret);
 }
