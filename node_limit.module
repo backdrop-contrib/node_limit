@@ -157,12 +157,12 @@ function _node_limit_violates_limit(&$node) {
   $limits = node_limit_limits($node);
   foreach ($limits as $idx => $lid) {
     $limit = node_limit_load($lid);
-    if ($limit['limit_count'] == NODE_LIMIT_NO_LIMIT) {
+    if ($limit['nlimit'] == NODE_LIMIT_NO_LIMIT) {
       continue;
     }
     $select = _node_limit_sql($limit['lid']);
     $count = $select->execute()->fetchField();
-    if ($count >= $limit['limit_count']) {
+    if ($count >= $limit['nlimit']) {
       return TRUE;
     }
   }
@@ -277,9 +277,9 @@ function node_limit_list_limits() {
     ->fields('nl')
     ->orderBy('weight', 'ASC')
     ->execute();
-  $limit_count = 0;
+  $nlimit = 0;
   foreach ($query as $row) {
-    $limit_count++;
+    $nlimit++;
     $form['limits'][$row->lid]['weight'] = array(
       '#type' => 'weight',
       '#default_value' => $row->weight
@@ -288,14 +288,14 @@ function node_limit_list_limits() {
       '#markup' => check_plain($row->title)
     );
     $form['limits'][$row->lid]['limit'] = array(
-      '#markup' => check_plain($row->limit_count)
+      '#markup' => check_plain($row->nlimit)
     );
     $form['limits'][$row->lid]['edit'] = array('#type' => 'link', '#title' => t('Edit'), '#href' => 'admin/structure/node_limit/'. $row->lid);
     $form['limits'][$row->lid]['list'] = array('#type' => 'link', '#title' => t('Delete'), '#href' => 'admin/structure/node_limit/'. $row->lid .'/delete');
     $form['limits'][$row->lid]['clone'] = array('#type' => 'link', '#title' => t('Clone'), '#href' => 'admin/structure/node_limit/'.$row->lid .'/clone');
   }
 
-  if ($limit_count > 0) {
+  if ($nlimit > 0) {
     $form['save'] = array(
       '#type' => 'submit',
       '#value' => t('Save Limits')
@@ -376,7 +376,7 @@ function node_limit_limit_form($form, &$form_state, $limit = false) {
       'lid' => 0,
       'title' => '',
       'weight' => 0,
-      'limit_count' => NODE_LIMIT_NO_LIMIT,
+      'nlimit' => NODE_LIMIT_NO_LIMIT,
     );      
   }
 
@@ -399,7 +399,7 @@ function node_limit_limit_form($form, &$form_state, $limit = false) {
   $form['info']['limit'] = array(
     '#title' => t('Limit'),
     '#type' => 'textfield',
-    '#default_value' => (isset($limit['limit_count']) ? $limit['limit_count'] : NODE_LIMIT_NO_LIMIT),
+    '#default_value' => (isset($limit['nlimit']) ? $limit['nlimit'] : NODE_LIMIT_NO_LIMIT),
     '#size' => 10,
     '#required' => TRUE,
     '#description' => t('The number of nodes for this limit.  Must be an integer greater than 0 or %nolimit for no limit', array('%nolimit' => NODE_LIMIT_NO_LIMIT))
@@ -481,7 +481,7 @@ function node_limit_limit_form_submit($form_id, &$form_state) {
   }
   $limit = array();
   $limit['lid'] = $lid;
-  $limit['limit_count'] = intval($form_state['values']['info']['limit']);
+  $limit['nlimit'] = intval($form_state['values']['info']['limit']);
   $limit['title'] = $form_state['values']['info']['title'];
   $limit['weight'] = $form_state['values']['info']['weight'];
 
@@ -594,7 +594,7 @@ function node_limit_save($limit) {
   db_insert('node_limit')
     ->fields(array(
       'lid' => $limit['lid'],
-      'limit_count' => $limit['limit_count'],
+      'nlimit' => $limit['nlimit'],
       'title' => $limit['title'],
       'weight' => $limit['weight']
       ))

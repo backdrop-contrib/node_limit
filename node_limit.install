@@ -26,7 +26,7 @@ function node_limit_schema() {
         'not null' => TRUE,
         'default' => ''
       ),
-      'limit_count' => array(
+      'nlimit' => array(
         'description' => 'The node limit for this limit',
         'type' => 'int',
         'not null' => TRUE,
@@ -69,5 +69,13 @@ function node_limit_update_6001() {
  */
 function node_limit_update_7001() {
   $ret = db_query("ALTER TABLE {node_limit} CHANGE `limit` `limit_count` INT(11) NOT NULL DEFAULT '-1' COMMENT 'The node limit for this limit'");
+  return !empty($ret);
+}
+
+/**
+ * Renaming limit field to avoid mysql restricted name usage
+ */
+function node_limit_update_7002() {
+  $ret = db_query("ALTER TABLE {node_limit} CHANGE `limit_count` `nlimit` INT(11) NOT NULL DEFAULT '-1' COMMENT 'The node limit for this limit'");
   return !empty($ret);
 }
