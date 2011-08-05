@@ -51,19 +51,6 @@ function node_limit_schema() {
   return $schema;
 }
 
-function node_limit_update_6001() {
-  if (!module_exists('node_limit_type')) {
-    $ret = array();
-    drupal_set_message(t('node_limit module cannot be updated until after node_limit_type has been enabled. Please enable node_limit_type and then return to <a href="@update-php">update.php</a> and run the remaining updates.', array('@update-php' => base_path() .'update.php?op=selection')), 'warning', FALSE);
-    $ret['#abort'] = array('success' => FALSE, 'query' => t('node_limit.module has updates, but cannot be updated until after node_limit_type.module is enabled.'));
-    
-    return $ret;
-  }
-  db_query("INSERT INTO {node_limit_type} (SELECT lid, type FROM {node_limit})");
-  $ret = update_sql("ALTER TABLE {node_limit} DROP COLUMN `type`");
-  return $ret;
-}
-
 /**
  * Renaming limit field to avoid mysql restricted name usage
  */
