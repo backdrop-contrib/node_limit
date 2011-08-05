@@ -38,7 +38,7 @@ function node_limit_interval_schema() {
  * Renaming interval field to avoid mysql restricted name usage
  */
 function node_limit_interval_update_7001() {
-  $ret = db_query("ALTER TABLE {node_limit} CHANGE `interval` `interval_value` INT(11) NOT NULL DEFAULT '0' COMMENT 'The interval for this limit'");
+  $ret = db_query("ALTER TABLE {node_limit_interval} CHANGE `interval` `interval_value` INT(11) NOT NULL DEFAULT '0' COMMENT 'The interval for this limit'");
   return !empty($ret);
 }
 
@@ -46,6 +46,6 @@ function node_limit_interval_update_7001() {
  * Renaming interval field to avoid mysql restricted name usage
  */
 function node_limit_interval_update_7002() {
-  $ret = db_query("ALTER TABLE {node_limit} CHANGE `interval_value` `ninterval` INT(11) NOT NULL DEFAULT '0' COMMENT 'The interval for this limit'");
+  $ret = db_query("ALTER TABLE {node_limit_interval} CHANGE `interval_value` `ninterval` INT(11) NOT NULL DEFAULT '0' COMMENT 'The interval for this limit'");
   return !empty($ret);
 }
