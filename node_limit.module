@@ -602,6 +602,8 @@ function node_limit_save($limit) {
   drupal_set_message(check_plain(print_r($limit, true)));
   $modules = module_implements('node_limit_save');
   foreach ($modules as $module) {
-    module_invoke($module, 'node_limit_save', $limit['lid'], isset($limit[$module]), $limit[$module]);
+    $applies = isset($limit[$module]);
+    $element = $applies ? $limit[$module] : '';
+    module_invoke($module, 'node_limit_save', $limit['lid'], $applies, $element);
   }
 }
