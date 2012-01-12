@@ -14,7 +14,7 @@ define("NODE_LIMIT_LIMIT_DOES_APPLY", 1);
 define("NODE_LIMIT_LIMIT_NEUTRAL", 2);
 
 /**
- * Implementation of hook_perm().
+ * Implementation of hook_permission().
  */
 function node_limit_permission() {
   return array(
@@ -88,6 +88,56 @@ function node_limit_menu() {
 }
 
 /**
+ * Implementation of hook_menu_alter().
+ */
+function node_limit_menu_alter(&$items) {
+  node_type_cache_reset();
+  foreach (node_type_get_types() as $type) {
+    $type_url_str = str_replace('_', '-', $type->type);
+    // Saving old access callbacks to allow other modules to define their own
+    variable_set('node_limit_' . $type_url_str . '_access_callback', $items['node/add/' . $type_url_str]['access callback']);
+    $items['node/add/' . $type_url_str]['access callback'] = 'node_limit_access';
+    $items['node/add/' . $type_url_str]['access arguments'] = array($type->type);
+  }
+  $items['node/add']['access callback'] = '_node_limit_add_access';
+}
+
+/**
+ * Rewriten access callback for node/add page
+ * Avoid access to this page when the user does not have the right to add any content type
+ */
+function _node_limit_add_access() {
+  $types = node_type_get_types();
+  foreach ($types as $type) {
+    if (node_hook($type->type, 'form') && node_limit_access($type->type)) {
+      return TRUE;
+    }
+  }
+  if (user_access('administer content types')) {
+    // There are no content types defined that the user has permission to create,
+    // but the user does have the permission to administer the content types, so
+    // grant them access to the page anyway.
+    return TRUE;
+  }
+  return FALSE;
+}
+
+/**
+ * Custom access callback for node/add/TYPE pages
+ */
+function node_limit_access($type, $account = NULL) {
+  if (empty($account)) {
+    $account = $GLOBALS['user'];
+  }
+
+  $node = new stdClass();
+  $node->uid = $account->uid;
+  $node->type = $type;
+  return !_node_limit_violates_limit($node)
+      && call_user_func_array(variable_get('node_limit_' . $type . '_access_callback'), array('create', $type));
+}
+
+/**
  * Implementation of hook_theme().
  * Register the two forms that require custom rendering.
  */
@@ -119,9 +169,9 @@ function node_limit_node_prepare($node) {
     // Avoid redirection loop if there is just one content type
     $count = 0;
     foreach (node_type_get_types() as $type) {
-        if (node_access('create', $type->name)) {
-            $count++;
-        }
+      if (node_limit_access($type->name)) {
+        $count++;
+      }
     }
     if ($count > 1) {
         drupal_goto('node/add');
