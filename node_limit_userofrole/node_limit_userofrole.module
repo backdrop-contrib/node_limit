@@ -1,29 +1,28 @@
 <?php
-// $Id$
+
 /**
  * @file
  * Module to restrict the number of nodes by role.
  */
 
 /**
- * Implementation of hook_node_limit_applies_in_context().
+ * Implements hook_node_limit_applies_in_context().
  */
 function node_limit_userofrole_node_limit_applies_in_context($lid, $node, $user) {
   $limit = node_limit_userofrole_node_limit_load($lid);
   if (empty($limit)) {
     return NODE_LIMIT_LIMIT_NEUTRAL;
   }
-  if (isset($user->roles[$limit['node_limit_userofrole']['rid']])
-   || ($user->uid > 0 && $limit['node_limit_userofrole']['rid'] == DRUPAL_AUTHENTICATED_RID)
-   || ($user->uid == 0 && $limit['node_limit_userofrole']['rid'] == DRUPAL_ANONYMOUS_RID)
-  ) {
-    return array('node_limit_userofrole' => NODE_LIMIT_LIMIT_DOES_APPLY);
+  $isRoleAnonymous = $limit['node_limit_role']['rid'] == DRUPAL_ANONYMOUS_RID;
+  $isRoleAuth = $limit['node_limit_role']['rid'] == DRUPAL_AUTHENTICATED_RID;
+  if (isset($user->roles[$limit['node_limit_role']['rid']]) || ($user->uid > 0 && $isRoleAnonymous) || ($user->uid == 0 && $isRoleAuth)) {
+    return array('node_limit_role' => NODE_LIMIT_LIMIT_DOES_APPLY);
   }
   return array('node_limit_userofrole' => NODE_LIMIT_LIMIT_DOESNT_APPLY);
 }
 
 /**
- * Implementation of hook_node_limit_sql().
+ * Implements hook_node_limit_sql().
  */
 function node_limit_userofrole_node_limit_sql($lid, SelectQuery $select) {
   global $user;
@@ -35,7 +34,7 @@ function node_limit_userofrole_node_limit_sql($lid, SelectQuery $select) {
 }
 
 /**
- * Implementation of hook_node_limit_element().
+ * Implements hook_node_limit_element().
  */
 function node_limit_userofrole_node_limit_element($lid = 0) {
   $limit = node_limit_userofrole_node_limit_load($lid);
@@ -56,7 +55,7 @@ function node_limit_userofrole_node_limit_element($lid = 0) {
 }
 
 /**
- * Implementation of hook_node_limit_element_validate().
+ * Implements hook_node_limit_element_validate().
  */
 function node_limit_userofrole_node_limit_element_validate($element) {
   /**
@@ -74,7 +73,7 @@ function node_limit_userofrole_node_limit_element_validate($element) {
 }
 
 /**
- * Implementation of hook_node_limit_save().
+ * Implements hook_node_limit_save().
  */
 function node_limit_userofrole_node_limit_save($lid, $applies, $element) {
   if ($applies) {
@@ -88,7 +87,7 @@ function node_limit_userofrole_node_limit_save($lid, $applies, $element) {
 }
 
 /**
- * Implementation of hook_node_limit_delete().
+ * Implements hook_node_limit_delete().
  */
 function node_limit_userofrole_node_limit_delete($lid) {
   db_delete('node_limit_userofrole')
@@ -97,7 +96,7 @@ function node_limit_userofrole_node_limit_delete($lid) {
 }
 
 /**
- * Implementation of hook_node_limit_load().
+ * Implements hook_node_limit_load().
  */
 function node_limit_userofrole_node_limit_load($lid) {
   $select = db_select('node_limit_userofrole', 'nlr');

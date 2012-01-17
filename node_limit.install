@@ -1,5 +1,5 @@
 <?php
-// $Id$
+
 /**
  * @file
  * Installation functions for module node_limit.
@@ -8,7 +8,7 @@
 if (!defined("NODE_LIMIT_NO_LIMIT")) define("NODE_LIMIT_NO_LIMIT", -1);
 
 /**
- * Implementation of hook_schema().
+ * Implements hook_schema().
  */
 function node_limit_schema() {
   $schema['node_limit'] = array(

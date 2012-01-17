@@ -1,12 +1,12 @@
 <?php
-// $Id$
+
 /**
  * @file
  * Installation functions for module node_limit_userofrole.
  */
 
 /**
- * Implementation of hook_schema().
+ * Implements hook_schema().
  */
 function node_limit_userofrole_schema() {
   $schema['node_limit_userofrole'] = array(
