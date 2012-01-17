@@ -1,12 +1,12 @@
 <?php
-// $Id$
+
 /**
  * @file
  * Installation functions for module node_limit_role.
  */
 
 /**
- * Implementation of hook_schema().
+ * Implements hook_schema().
  */
 function node_limit_role_schema() {
   $schema['node_limit_role'] = array(

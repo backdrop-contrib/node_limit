@@ -1,5 +1,5 @@
 <?php
-// $Id$
+
 /**
  * @file
  * Module to restrict the number of nodes within a time interval.
@@ -14,7 +14,7 @@
   define("NODE_LIMIT_INTERVAL_YEARS", "31536000");
 
 /**
- * Implementation of hook_node_limit_applies_in_context().
+ * Implements hook_node_limit_applies_in_context().
  */
 function node_limit_interval_node_limit_applies_in_context($lid, $node, $user) {
   $limit = node_limit_interval_node_limit_load($lid);
@@ -25,7 +25,7 @@ function node_limit_interval_node_limit_applies_in_context($lid, $node, $user) {
 }
 
 /**
- * Implementation of hook_node_limit_sql().
+ * Implements hook_node_limit_sql().
  */
 function node_limit_interval_node_limit_sql($lid, SelectQuery $select) {
   $limit = node_limit_interval_node_limit_load($lid);
@@ -44,7 +44,7 @@ function node_limit_interval_node_limit_sql($lid, SelectQuery $select) {
 }
 
 /**
- * Implementation of hook_node_limit_render_element().
+ * Implements hook_node_limit_render_element().
  */
 function node_limit_interval_node_limit_render_element(&$element) {
   $title = $element['interval']['#title'];
@@ -56,7 +56,7 @@ function node_limit_interval_node_limit_render_element(&$element) {
 }
 
 /**
- * Implementation of hook_node_limit_element().
+ * Implements hook_node_limit_element().
  */
 function node_limit_interval_node_limit_element($lid = 0) {
   $limit = node_limit_interval_node_limit_load($lid);
@@ -109,7 +109,7 @@ function _node_limit_interval_interval_names() {
 }
 
 /**
- * Implementation of hook_node_limit_element_validate().
+ * Implements hook_node_limit_element_validate().
  */
 function node_limit_interval_node_limit_element_validate($element) {
   /**
@@ -128,7 +128,7 @@ function node_limit_interval_node_limit_element_validate($element) {
 }
 
 /**
- * Implementation of hook_node_limit_save().
+ * Implements hook_node_limit_save().
  */
 function node_limit_interval_node_limit_save($lid, $applies, $element) {
   if ($applies) {
@@ -145,7 +145,7 @@ function node_limit_interval_node_limit_save($lid, $applies, $element) {
 }
 
 /**
- * Implementation of hook_node_limit_delete().
+ * Implements hook_node_limit_delete().
  */
 function node_limit_interval_node_limit_delete($lid) {
   db_delete('node_limit_interval')
@@ -154,7 +154,7 @@ function node_limit_interval_node_limit_delete($lid) {
 }
 
 /**
- * Implementation of hook_node_limit_load().
+ * Implements hook_node_limit_load().
  */
 function node_limit_interval_node_limit_load($lid) {
   $select = db_select('node_limit_interval', 'nti')

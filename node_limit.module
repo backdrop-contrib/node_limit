@@ -1,5 +1,5 @@
 <?php
-// $Id$
+
 /**
  * @file
  * Module to restrict the number of nodes a user or role may create.
@@ -14,7 +14,7 @@ define("NODE_LIMIT_LIMIT_DOES_APPLY", 1);
 define("NODE_LIMIT_LIMIT_NEUTRAL", 2);
 
 /**
- * Implementation of hook_permission().
+ * Implements hook_permission().
  */
 function node_limit_permission() {
   return array(
@@ -39,7 +39,7 @@ function node_limit_admin_paths() {
 }
 
 /**
- * Implementation of hook_menu().
+ * Implements hook_menu().
  */
 function node_limit_menu() {
   $items = array();
@@ -88,7 +88,7 @@ function node_limit_menu() {
 }
 
 /**
- * Implementation of hook_menu_alter().
+ * Implements hook_menu_alter().
  */
 function node_limit_menu_alter(&$items) {
   node_type_cache_reset();
@@ -138,7 +138,7 @@ function node_limit_access($type, $account = NULL) {
 }
 
 /**
- * Implementation of hook_theme().
+ * Implements hook_theme().
  * Register the two forms that require custom rendering.
  */
 function node_limit_theme() {
@@ -153,7 +153,7 @@ function node_limit_theme() {
 }
 
 /**
- * Implementation of hook_node_prepare().
+ * Implements hook_node_prepare().
  *
  * This is where we'll determine if the user may create new nodes or not.
  * We'll use hook_node_prepare, which is sent before the edit/add form
@@ -175,14 +175,15 @@ function node_limit_node_prepare($node) {
     }
     if ($count > 1) {
         drupal_goto('node/add');
-    } else {
+    } 
+    else {
         drupal_goto('');
     }
   }
 }
 
 /**
- * Implementation of hook_node_validate().
+ * Implements hook_node_validate().
  */
 function node_limit_node_validate($node, $form, &$form_state) {
   if (empty($node->nid) && _node_limit_violates_limit($node)) {
@@ -340,9 +341,9 @@ function node_limit_list_limits() {
     $form['limits'][$row->lid]['limit'] = array(
       '#markup' => check_plain($row->nlimit)
     );
-    $form['limits'][$row->lid]['edit'] = array('#type' => 'link', '#title' => t('Edit'), '#href' => 'admin/structure/node_limit/'. $row->lid);
-    $form['limits'][$row->lid]['list'] = array('#type' => 'link', '#title' => t('Delete'), '#href' => 'admin/structure/node_limit/'. $row->lid .'/delete');
-    $form['limits'][$row->lid]['clone'] = array('#type' => 'link', '#title' => t('Clone'), '#href' => 'admin/structure/node_limit/'.$row->lid .'/clone');
+    $form['limits'][$row->lid]['edit'] = array('#type' => 'link', '#title' => t('Edit'), '#href' => 'admin/structure/node_limit/' . $row->lid);
+    $form['limits'][$row->lid]['list'] = array('#type' => 'link', '#title' => t('Delete'), '#href' => 'admin/structure/node_limit/' . $row->lid . '/delete');
+    $form['limits'][$row->lid]['clone'] = array('#type' => 'link', '#title' => t('Clone'), '#href' => 'admin/structure/node_limit/' . $row->lid . '/clone');
   }
 
   if ($nlimit > 0) {
@@ -420,7 +421,7 @@ var_dump($form);
 /**
  * The node_limit settings form.
  */
-function node_limit_limit_form($form, &$form_state, $limit = false) {
+function node_limit_limit_form($form, &$form_state, $limit = FALSE) {
   if (empty($limit)) {
     $limit = array(
       'lid' => 0,
@@ -649,7 +650,7 @@ function node_limit_save($limit) {
       'weight' => $limit['weight']
       ))
     ->execute();
-  drupal_set_message(check_plain(print_r($limit, true)));
+  drupal_set_message(check_plain(print_r($limit, TRUE)));
   $modules = module_implements('node_limit_save');
   foreach ($modules as $module) {
     $applies = isset($limit[$module]);
