@@ -18,7 +18,7 @@ function node_limit_type_node_type($op, $info) {
         ->condition('type', $info->type)
         ->execute();
       if ($num > 0) {
-        drupal_set_message(t('Deleted !num limit rules.', array('!num' => (int) $num)));
+        drupal_set_message(t('Deleted !num.', array('!num' => format_plural((int) $num, '1 limit rule', '@count limit rules'))));
       }
       break;
   }

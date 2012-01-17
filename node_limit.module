@@ -629,7 +629,7 @@ function node_limit_load($lid) {
 }
 
 function node_limit_delete($lid) {
-  $num_deleted = db_delete('node_limit')
+  $num = db_delete('node_limit')
     ->condition('lid', $lid)
     ->execute();
 

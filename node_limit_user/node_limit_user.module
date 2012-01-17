@@ -11,11 +11,11 @@
  * Delete all limit rules related to the deleted user.
  */
 function node_limit_user_delete($account) {
-  $num_deleted = db_delete('node_limit_user')
+  $num = db_delete('node_limit_user')
     ->condition('uid', $account->uid)
     ->execute();
   if ($num_deleted > 0) {
-    drupal_set_message(t('Deleted !num limit rules.', array('!num' => (int) $num_deleted)));
+    drupal_set_message(t('Deleted !num.', array('!num' => format_plural((int) $num, '1 limit rule', '@count limit rules'))));
   }
 }
 
