@@ -87,30 +87,14 @@ function node_limit_interval_node_limit_element($lid = 0) {
  * Prepare time frame select options.
  */
 function _node_limit_interval_interval_options() {
-  $names = _node_limit_interval_interval_names();
   return array(
-    NODE_LIMIT_INTERVAL_SECONDS => t($names[NODE_LIMIT_INTERVAL_SECONDS]),
-    NODE_LIMIT_INTERVAL_MINUTES => t($names[NODE_LIMIT_INTERVAL_MINUTES]),
-    NODE_LIMIT_INTERVAL_HOURS => t($names[NODE_LIMIT_INTERVAL_HOURS]),
-    NODE_LIMIT_INTERVAL_DAYS => t($names[NODE_LIMIT_INTERVAL_DAYS]),
-    NODE_LIMIT_INTERVAL_WEEKS => t($names[NODE_LIMIT_INTERVAL_WEEKS]),
-    NODE_LIMIT_INTERVAL_MONTHS => t($names[NODE_LIMIT_INTERVAL_MONTHS]),
-    NODE_LIMIT_INTERVAL_YEARS => t($names[NODE_LIMIT_INTERVAL_YEARS]),
-  );
-}
-
-/**
- * Prepare time frame names.
- */
-function _node_limit_interval_interval_names() {
-  return array(
-    NODE_LIMIT_INTERVAL_SECONDS => 'Seconds',
-    NODE_LIMIT_INTERVAL_MINUTES => 'Minutes',
-    NODE_LIMIT_INTERVAL_HOURS => 'Hours',
-    NODE_LIMIT_INTERVAL_DAYS => 'Days',
-    NODE_LIMIT_INTERVAL_WEEKS => 'Weeks',
-    NODE_LIMIT_INTERVAL_MONTHS => 'Months',
-    NODE_LIMIT_INTERVAL_YEARS => 'Years',
+    NODE_LIMIT_INTERVAL_SECONDS => t('Seconds'),
+    NODE_LIMIT_INTERVAL_MINUTES => t('Minutes'),
+    NODE_LIMIT_INTERVAL_HOURS => t('Hours'),
+    NODE_LIMIT_INTERVAL_DAYS => t('Days'),
+    NODE_LIMIT_INTERVAL_WEEKS => t('Weeks'),
+    NODE_LIMIT_INTERVAL_MONTHS => t('Months'),
+    NODE_LIMIT_INTERVAL_YEARS => t('Years'),
   );
 }
 
