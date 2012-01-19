@@ -6,6 +6,20 @@
  */
 
 /**
+ * Implements hook_user_role_delete().
+ *
+ * Delete all rules related to the role being deleted.
+ */
+function node_limit_role_user_role_delete($role) {
+  $num = db_delete('node_limit_role')
+    ->condition('rid', $role->rid)
+    ->execute();
+  if ($num_deleted > 0) {
+    drupal_set_message(t('Deleted !num.', array('!num' => format_plural((int) $num, '1 limit rule', '@count limit rules'))));
+  }
+}
+
+/**
  * Implements hook_node_limit_applies_in_context().
  */
 function node_limit_role_node_limit_applies_in_context($lid, $node, $user) {
