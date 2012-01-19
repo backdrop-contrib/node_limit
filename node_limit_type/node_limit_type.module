@@ -6,21 +6,17 @@
  */
 
 /**
- * Implements hook_node_type().
+ * Implements hook_node_type_delete().
  *
  * Delete all rules related to the node type being deleted.
  */
-function node_limit_type_node_type($op, $info) {
-  switch ($op) {
-    case 'delete':
-      $sql = "DELETE FROM {node_limit_type} WHERE type = '%s'";
-      $num = db_delete('node_limit_type')
-        ->condition('type', $info->type)
-        ->execute();
-      if ($num > 0) {
-        drupal_set_message(t('Deleted !num.', array('!num' => format_plural((int) $num, '1 limit rule', '@count limit rules'))));
-      }
-      break;
+function hook_node_type_delete($info) {
+  $sql = "DELETE FROM {node_limit_type} WHERE type = '%s'";
+  $num = db_delete('node_limit_type')
+    ->condition('type', $info->type)
+    ->execute();
+  if ($num > 0) {
+    drupal_set_message(t('Deleted !num.', array('!num' => format_plural((int) $num, '1 limit rule', '@count limit rules'))));
   }
 }
 
