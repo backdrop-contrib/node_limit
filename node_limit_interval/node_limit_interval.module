@@ -83,6 +83,9 @@ function node_limit_interval_node_limit_element($lid = 0) {
   );
 }
 
+/**
+ * Prepare time frame select options.
+ */
 function _node_limit_interval_interval_options() {
   $names = _node_limit_interval_interval_names();
   return array(
@@ -96,6 +99,9 @@ function _node_limit_interval_interval_options() {
   );
 }
 
+/**
+ * Prepare time frame names.
+ */
 function _node_limit_interval_interval_names() {
   return array(
     NODE_LIMIT_INTERVAL_SECONDS => 'Seconds',

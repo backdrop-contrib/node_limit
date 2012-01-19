@@ -104,8 +104,8 @@ function node_limit_menu_alter(&$items) {
 }
 
 /**
- * Rewriten access callback for node/add page
- * Avoid access to this page when the user does not have the right to add any content type
+ * Rewriten access callback for node/add page.
+ * Avoid access to this page when the user does not have the right to add any content type.
  */
 function _node_limit_add_access() {
   $types = node_type_get_types();
@@ -124,7 +124,11 @@ function _node_limit_add_access() {
 }
 
 /**
- * Custom access callback for node/add/TYPE pages
+ * Custom access callback for node/add/TYPE pages.
+ * @param $type
+ *   Content type to check
+ * @param $account
+ *   User account to check (default to current user)
  */
 function node_limit_access($type, $account = NULL) {
   if (empty($account)) {
@@ -161,7 +165,7 @@ function node_limit_theme() {
  *
  * This is where we'll determine if the user may create new nodes or not.
  * We'll use hook_node_prepare, which is sent before the edit/add form
- * is constructed.
+ * is constructed.  
  */
 function node_limit_node_prepare($node) {
   if (empty($node->nid) && _node_limit_violates_limit($node)) {
@@ -423,6 +427,7 @@ var_dump($form);
 // */
 
 /**
+ * Implements hook_form().
  * The node_limit settings form.
  */
 function node_limit_limit_form($form, &$form_state, $limit = FALSE) {
@@ -555,6 +560,7 @@ function node_limit_limit_form_submit($form_id, &$form_state) {
 }
 
 /**
+ * Implements hook_form().
  * Confirmation form to delete a node limit.
  */
 function node_limit_delete_form($form, &$form_state, $limit) {
@@ -632,6 +638,12 @@ function node_limit_load($lid) {
   }
 }
 
+/**
+ * Delete a node limit
+ * 
+ * @param $lid
+ *   The limit id.
+ */
 function node_limit_delete($lid) {
   $num = db_delete('node_limit')
     ->condition('lid', $lid)
@@ -642,6 +654,9 @@ function node_limit_delete($lid) {
 
 /**
  * Callback to save a node limit back to the database.
+ * 
+ * @param $limit
+ *   The limit data.
  */
 function node_limit_save($limit) {
   node_limit_delete($limit['lid']);

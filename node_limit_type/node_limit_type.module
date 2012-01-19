@@ -6,7 +6,7 @@
  */
 
 /**
- * Implements hook_user().
+ * Implements hook_node_type().
  *
  * Delete all rules related to the node type being deleted.
  */

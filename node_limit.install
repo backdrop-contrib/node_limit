@@ -52,7 +52,8 @@ function node_limit_schema() {
 }
 
 /**
- * Renaming limit field to avoid mysql restricted name usage
+ * Implements hook_update_N().
+ * Renaming limit field to avoid mysql restricted name usage.
  */
 function node_limit_update_7001() {
   // Cannot use db_change_field() because of the restricted name
@@ -61,7 +62,8 @@ function node_limit_update_7001() {
 }
 
 /**
- * Renaming limit_count field to keep names consistency
+ * Implements hook_update_N().
+ * Renaming limit_count field to keep names consistency.
  */
 function node_limit_update_7002() {
   $ret = db_change_field('node_limit', 'limit_count', 'nlimit', 
