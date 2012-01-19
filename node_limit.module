@@ -639,17 +639,24 @@ function node_limit_load($lid) {
 }
 
 /**
- * Delete a node limit
+ * Delete node limits
  * 
  * @param $lid
  *   The limit id.
  */
-function node_limit_delete($lid) {
+function node_limit_delete($lids) {
+  if (!is_array($lids)) {
+    $lids = array($lids);
+  }
   $num = db_delete('node_limit')
-    ->condition('lid', $lid)
+    ->condition('lid', $lids, 'IN')
     ->execute();
 
-  module_invoke_all('node_limit_delete', $lid);
+  module_invoke_all('node_limit_delete', $lids);
+  
+  if ($num > 0) {
+    drupal_set_message(t('Deleted !num.', array('!num' => format_plural((int) $num, '1 limit rule', '@count limit rules'))));
+  }
 }
 
 /**

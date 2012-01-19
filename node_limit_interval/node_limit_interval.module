@@ -137,9 +137,9 @@ function node_limit_interval_node_limit_save($lid, $applies, $element) {
 /**
  * Implements hook_node_limit_delete().
  */
-function node_limit_interval_node_limit_delete($lid) {
+function node_limit_interval_node_limit_delete($lids) {
   db_delete('node_limit_interval')
-    ->condition('lid', $lid)
+    ->condition('lid', $lids, 'IN')
     ->execute();
 }
 

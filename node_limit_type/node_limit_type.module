@@ -10,14 +10,16 @@
  *
  * Delete all rules related to the node type being deleted.
  */
-function hook_node_type_delete($info) {
-  $sql = "DELETE FROM {node_limit_type} WHERE type = '%s'";
-  $num = db_delete('node_limit_type')
+function node_limit_type_node_type_delete($info) {
+  $limits = db_select('node_limit_type', 'src')
+    ->fields('src', array('lid'))
     ->condition('type', $info->type)
     ->execute();
-  if ($num > 0) {
-    drupal_set_message(t('Deleted !num.', array('!num' => format_plural((int) $num, '1 limit rule', '@count limit rules'))));
+  $lids = array();
+  foreach ($limits as $limit) {
+    $lids[] = $limit->lid;
   }
+  node_limit_delete($lids);
 }
 
 /**
@@ -87,9 +89,9 @@ function node_limit_type_node_limit_save($lid, $applies, $element) {
 /**
  * Implements hook_node_limit_delete().
  */
-function node_limit_type_node_limit_delete($lid) {
+function node_limit_type_node_limit_delete($lids) {
   db_delete('node_limit_type')
-    ->condition('lid', $lid)
+    ->condition('lid', $lids, 'IN')
     ->execute();
 }
 

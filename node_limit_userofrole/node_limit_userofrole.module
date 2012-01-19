@@ -11,12 +11,15 @@
  * Delete all rules related to the role being deleted.
  */
 function node_limit_userofrole_user_role_delete($role) {
-  $num = db_delete('node_limit_userofrole')
+  $limits = db_select('node_limit_userofrole', 'src')
+    ->fields('src', array('lid'))
     ->condition('rid', $role->rid)
     ->execute();
-  if ($num_deleted > 0) {
-    drupal_set_message(t('Deleted !num.', array('!num' => format_plural((int) $num, '1 limit rule', '@count limit rules'))));
+  $lids = array();
+  foreach ($limits as $limit) {
+    $lids[] = $limit->lid;
   }
+  node_limit_delete($lids);
 }
 
 /**
@@ -103,9 +106,9 @@ function node_limit_userofrole_node_limit_save($lid, $applies, $element) {
 /**
  * Implements hook_node_limit_delete().
  */
-function node_limit_userofrole_node_limit_delete($lid) {
+function node_limit_userofrole_node_limit_delete($lids) {
   db_delete('node_limit_userofrole')
-    ->condition('lid', $lid)
+    ->condition('lid', $lids, 'IN')
     ->execute();
 }
 
