@@ -73,3 +73,12 @@ function node_limit_update_7002() {
     ));
   return !empty($ret);
 }
+
+/**
+ * Implements hook_disable().
+ */
+function node_limit_disable() {
+  db_delete('variable')
+    ->condition('name', 'node_limit_%', 'LIKE')
+    ->execute();
+}
