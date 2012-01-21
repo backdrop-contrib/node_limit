@@ -648,6 +648,9 @@ function node_limit_delete($lids) {
   if (!is_array($lids)) {
     $lids = array($lids);
   }
+  if (empty($lids)) {
+    return;
+  }
   $num = db_delete('node_limit')
     ->condition('lid', $lids, 'IN')
     ->execute();
