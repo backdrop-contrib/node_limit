@@ -643,8 +643,10 @@ function node_limit_load($lid) {
  * 
  * @param $lid
  *   The limit id.
+ * @param $silent
+ *   Hide success message.
  */
-function node_limit_delete($lids) {
+function node_limit_delete($lids, $silent = false) {
   if (!is_array($lids)) {
     $lids = array($lids);
   }
@@ -657,7 +659,7 @@ function node_limit_delete($lids) {
 
   module_invoke_all('node_limit_delete', $lids);
   
-  if ($num > 0) {
+  if ($num > 0 && !$silent) {
     drupal_set_message(t('Deleted !num.', array('!num' => format_plural((int) $num, '1 limit rule', '@count limit rules'))));
   }
 }
@@ -669,7 +671,7 @@ function node_limit_delete($lids) {
  *   The limit data.
  */
 function node_limit_save($limit) {
-  node_limit_delete($limit['lid']);
+  node_limit_delete($limit['lid'], true);
 
   db_insert('node_limit')
     ->fields(array(
@@ -679,7 +681,6 @@ function node_limit_save($limit) {
       'weight' => $limit['weight']
       ))
     ->execute();
-  drupal_set_message(check_plain(print_r($limit, TRUE)));
   $modules = module_implements('node_limit_save');
   foreach ($modules as $module) {
     $applies = isset($limit[$module]);
