@@ -27,15 +27,18 @@ function node_limit_userofrole_user_role_delete($role) {
  */
 function node_limit_userofrole_node_limit_applies_in_context($lid, $node, $user) {
   $limit = node_limit_userofrole_node_limit_load($lid);
+  $applies = NODE_LIMIT_LIMIT_DOESNT_APPLY;
   if (empty($limit)) {
-    return NODE_LIMIT_LIMIT_NEUTRAL;
+    $applies = NODE_LIMIT_LIMIT_NEUTRAL;
   }
-  $isRoleAnonymous = $limit['node_limit_userofrole']['rid'] == DRUPAL_ANONYMOUS_RID;
-  $isRoleAuth = $limit['node_limit_userofrole']['rid'] == DRUPAL_AUTHENTICATED_RID;
-  if (isset($user->roles[$limit['node_limit_userofrole']['rid']]) || ($user->uid > 0 && $isRoleAnonymous) || ($user->uid == 0 && $isRoleAuth)) {
-    return array('node_limit_userofrole' => NODE_LIMIT_LIMIT_DOES_APPLY);
+  else {
+    $isRoleAnonymous = $limit['node_limit_userofrole']['rid'] == DRUPAL_ANONYMOUS_RID;
+    $isRoleAuth = $limit['node_limit_userofrole']['rid'] == DRUPAL_AUTHENTICATED_RID;
+    if (isset($user->roles[$limit['node_limit_userofrole']['rid']]) || ($user->uid > 0 && $isRoleAnonymous) || ($user->uid == 0 && $isRoleAuth)) {
+      $applies = NODE_LIMIT_LIMIT_DOES_APPLY;
+    }
   }
-  return array('node_limit_userofrole' => NODE_LIMIT_LIMIT_DOESNT_APPLY);
+  return array('node_limit_userofrole' => $applies);
 }
 
 /**

@@ -18,10 +18,11 @@
  */
 function node_limit_interval_node_limit_applies_in_context($lid, $node, $user) {
   $limit = node_limit_interval_node_limit_load($lid);
+  $applies = NODE_LIMIT_LIMIT_DOES_APPLY;
   if (empty($limit)) {
-    return NODE_LIMIT_LIMIT_NEUTRAL;
+    $applies = NODE_LIMIT_LIMIT_NEUTRAL;
   }
-  return array('node_limit_interval' => NODE_LIMIT_LIMIT_DOES_APPLY);
+  return array('node_limit_interval' => $applies);
 }
 
 /**

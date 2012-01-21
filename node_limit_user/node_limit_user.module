@@ -27,13 +27,14 @@ function node_limit_user_delete($account) {
  */
 function node_limit_user_node_limit_applies_in_context($lid, $node, $user) {
   $limit = node_limit_user_node_limit_load($lid);
+  $applies = NODE_LIMIT_LIMIT_DOES_APPLY;
   if (empty($limit)) {
-    return NODE_LIMIT_LIMIT_NEUTRAL;
+    $applies = NODE_LIMIT_LIMIT_NEUTRAL;
   }
-  if ($limit['node_limit_user']['uid'] != $user->uid) {
-    return array('node_limit_user' => NODE_LIMIT_LIMIT_DOESNT_APPLY);
+  elseif ($limit['node_limit_user']['uid'] != $user->uid) {
+    $applies = NODE_LIMIT_LIMIT_DOESNT_APPLY;
   }
-  return array('node_limit_user' => NODE_LIMIT_LIMIT_DOES_APPLY);
+  return array('node_limit_user' => $applies);
 }
 
 /**
