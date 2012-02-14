@@ -131,17 +131,29 @@ function _node_limit_add_access() {
  *   User account to check (default to current user)
  */
 function node_limit_access($type, $account = NULL) {
-  if (empty($account)) {
-    $account = $GLOBALS['user'];
+  global $user;
+  if (empty($account)) { 
+    $account = $user; 
   }
-  $node = new stdClass();
-  $node->uid = $account->uid;
-  $node->type = $type;
-  
-  $oldCallback  = variable_get('node_limit_' . $type . '_access_callback');
-  $oldArguments = variable_get('node_limit_' . $type . '_access_arguments', array());
-  $oldAccess = function_exists($oldCallback) ? call_user_func_array($oldCallback, $oldArguments) : TRUE;
-  return !_node_limit_violates_limit($node) && $oldAccess;
+
+  $access = &drupal_static(__FUNCTION__, array());
+  if (!array_key_exists($account->uid, $access)) {
+    $access[$account->uid] = array();
+  }
+
+  if (!array_key_exists($type, $access[$account->uid])) {
+    $node = new stdClass();
+    $node->uid = $account->uid;
+    $node->type = $type;
+
+    $oldCallback  = variable_get('node_limit_' . $type . '_access_callback');
+    $oldArguments = variable_get('node_limit_' . $type . '_access_arguments', array());
+    $oldAccess = function_exists($oldCallback) ? call_user_func_array($oldCallback, $oldArguments) : TRUE;
+    
+    $access[$account->uid][$type] = !_node_limit_violates_limit($node) && $oldAccess;
+  }
+
+  return $access[$account->uid][$type];
 }
 
 /**
