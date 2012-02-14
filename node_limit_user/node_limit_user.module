@@ -6,7 +6,7 @@
  */
 
 /**
- * Implements hook_user().
+ * Implements hook_user_delete().
  *
  * Delete all limit rules related to the deleted user.
  */

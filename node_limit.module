@@ -657,7 +657,7 @@ function node_limit_load($lid) {
  * @param $silent
  *   Hide success message.
  */
-function node_limit_delete($lids, $silent = false) {
+function node_limit_delete($lids, $silent = FALSE) {
   if (!is_array($lids)) {
     $lids = array($lids);
   }
@@ -682,7 +682,7 @@ function node_limit_delete($lids, $silent = false) {
  *   The limit data.
  */
 function node_limit_save($limit) {
-  node_limit_delete($limit['lid'], true);
+  node_limit_delete($limit['lid'], TRUE);
 
   db_insert('node_limit')
     ->fields(array(
