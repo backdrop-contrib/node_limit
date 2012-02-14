@@ -3,5 +3,7 @@ description = Allows admins to restrict the number of nodes that may be created.
 package = Node Limit
 core = 7.x
 
+configure = admin/structure/node_limit
+
 files[] = node_limit.install
 files[] = node_limit.module
