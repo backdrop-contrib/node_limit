@@ -95,8 +95,8 @@ function node_limit_menu_alter(&$items) {
   foreach (node_type_get_types() as $type) {
     $type_url_str = str_replace('_', '-', $type->type);
     // Saving old access callbacks to allow other modules to define their own
-    variable_set('node_limit_' . $type_url_str . '_access_callback', $items['node/add/' . $type_url_str]['access callback']);
-    variable_set('node_limit_' . $type_url_str . '_access_arguments', $items['node/add/' . $type_url_str]['access arguments']);
+    variable_set('node_limit_' . $type->type . '_access_callback', $items['node/add/' . $type_url_str]['access callback']);
+    variable_set('node_limit_' . $type->type . '_access_arguments', $items['node/add/' . $type_url_str]['access arguments']);
     $items['node/add/' . $type_url_str]['access callback'] = 'node_limit_access';
     $items['node/add/' . $type_url_str]['access arguments'] = array($type->type);
   }
@@ -134,7 +134,6 @@ function node_limit_access($type, $account = NULL) {
   if (empty($account)) {
     $account = $GLOBALS['user'];
   }
-
   $node = new stdClass();
   $node->uid = $account->uid;
   $node->type = $type;
