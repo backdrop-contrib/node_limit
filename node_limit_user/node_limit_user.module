@@ -93,14 +93,23 @@ function node_limit_user_node_limit_element_validate($element) {
  */
 function node_limit_user_node_limit_save($lid, $applies, $element) {
   if ($applies) {
+    // In the clone context, $element is an array containing 
+    // the uid and the user name
+    if (is_array($element)) {
+      $uid = $element['uid'];
+    }
+    // In the creation/edition context
     // $element contains the username of the user
     // user_load based on the name to get the uid
-    $user = user_load_by_name($element);
+    else {
+      $user = user_load_by_name($element);
+      $uid = $user->uid;
+    }
 
     db_insert('node_limit_user')
       ->fields(array(
         'lid' => $lid,
-        'uid' => $user->uid,
+        'uid' => $uid,
       ))
       ->execute();
   }
