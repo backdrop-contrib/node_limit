@@ -8,6 +8,7 @@
 if (!defined("NODE_LIMIT_NO_LIMIT")) define("NODE_LIMIT_NO_LIMIT", -1);
 
 define("NODE_LIMIT_PERM_ADMIN", "administer node limits");
+define("NODE_LIMIT_PERM_OVERRIDE", "override node limits");
 
 define("NODE_LIMIT_LIMIT_DOESNT_APPLY", 0);
 define("NODE_LIMIT_LIMIT_DOES_APPLY", 1);
@@ -20,8 +21,12 @@ function node_limit_permission() {
   return array(
     NODE_LIMIT_PERM_ADMIN => array(
       'title' => t('Administer node limits'),
-      'description' => t('Allow administrators to change the node limit values')
-    )
+      'description' => t('Allow administrators to change the node limit values'),
+    ),
+    NODE_LIMIT_PERM_OVERRIDE => array(
+      'title' => t('Override node limits'),
+      'description' => t('Allow users to override all node limits'),
+    ),
   );
 }
 
@@ -221,7 +226,7 @@ function node_limit_node_validate($node, $form, &$form_state) {
  *   The node to check.
  */
 function _node_limit_violates_limit(&$node) {
-  if ($node->uid == 1) {
+  if ($node->uid == 1 || user_access(NODE_LIMIT_PERM_OVERRIDE)) {
     return FALSE;
   }
   $limits = node_limit_limits($node);
