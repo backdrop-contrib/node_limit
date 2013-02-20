@@ -31,7 +31,7 @@ function node_limit_userofrole_node_limit_applies_in_context($lid, $node, $user)
   if (empty($limit)) {
     $applies = NODE_LIMIT_LIMIT_NEUTRAL;
   }
-  else {
+  elseif (!empty($user)) {
     $isRoleAnonymous = $limit['node_limit_userofrole']['rid'] == DRUPAL_ANONYMOUS_RID;
     $isRoleAuth = $limit['node_limit_userofrole']['rid'] == DRUPAL_AUTHENTICATED_RID;
     if (isset($user->roles[$limit['node_limit_userofrole']['rid']]) || ($user->uid > 0 && $isRoleAnonymous) || ($user->uid == 0 && $isRoleAuth)) {

@@ -31,7 +31,7 @@ function node_limit_user_node_limit_applies_in_context($lid, $node, $user) {
   if (empty($limit)) {
     $applies = NODE_LIMIT_LIMIT_NEUTRAL;
   }
-  elseif ($limit['node_limit_user']['uid'] != $user->uid) {
+  elseif (!empty($user) && $limit['node_limit_user']['uid'] != $user->uid) {
     $applies = NODE_LIMIT_LIMIT_DOESNT_APPLY;
   }
   return array('node_limit_user' => $applies);
