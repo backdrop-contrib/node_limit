@@ -4,6 +4,3 @@ package = Node Limit
 core = 7.x
 
 configure = admin/structure/node_limit
-
-files[] = node_limit.install
-files[] = node_limit.module
