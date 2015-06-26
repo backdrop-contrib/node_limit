@@ -115,7 +115,7 @@ function node_limit_menu_alter(&$items) {
 function _node_limit_add_access() {
   $types = node_type_get_types();
   foreach ($types as $type) {
-    if (node_hook($type->type, 'form') && node_limit_access($type->type)) {
+    if (node_hook($type->type, 'form') && node_limit_access($type->type, $context = 'node_add')) {
       return TRUE;
     }
   }
@@ -135,12 +135,11 @@ function _node_limit_add_access() {
  * @param $account
  *   User account to check (default to current user)
  */
-function node_limit_access($type, $account = NULL) {
+function node_limit_access($type, $context = '', $account = NULL) {
   global $user;
-  if (empty($account)) { 
-    $account = $user; 
+  if (empty($account)) {
+    $account = $user;
   }
-
   $access = &drupal_static(__FUNCTION__, array());
   if (!array_key_exists($account->uid, $access)) {
     $access[$account->uid] = array();
@@ -150,12 +149,10 @@ function node_limit_access($type, $account = NULL) {
     $node = new stdClass();
     $node->uid = $account->uid;
     $node->type = $type;
-
     $oldCallback  = variable_get('node_limit_' . $type . '_access_callback');
     $oldArguments = variable_get('node_limit_' . $type . '_access_arguments', array());
     $oldAccess = function_exists($oldCallback) ? call_user_func_array($oldCallback, $oldArguments) : TRUE;
-    
-    $access[$account->uid][$type] = !_node_limit_violates_limit($node) && $oldAccess;
+    $access[$account->uid][$type] = !_node_limit_violates_limit($node, $context) && $oldAccess;
   }
 
   return $access[$account->uid][$type];
@@ -181,7 +178,7 @@ function node_limit_theme() {
  *
  * This is where we'll determine if the user may create new nodes or not.
  * We'll use hook_node_prepare, which is sent before the edit/add form
- * is constructed.  
+ * is constructed.
  */
 function node_limit_node_prepare($node) {
   if (empty($node->nid) && _node_limit_violates_limit($node)) {
@@ -189,7 +186,7 @@ function node_limit_node_prepare($node) {
     //and this is a new node
     $nodetype = node_type_get_type($node);
     drupal_set_message(t("You can't create more content of type !type", array('!type' => check_plain($nodetype->name))), 'error');
-    
+
     // Avoid redirection loop if there is just one content type
     $count = 0;
     foreach (node_type_get_types() as $type) {
@@ -199,7 +196,7 @@ function node_limit_node_prepare($node) {
     }
     if ($count > 1) {
         drupal_goto('node/add');
-    } 
+    }
     else {
         drupal_goto('');
     }
@@ -225,7 +222,7 @@ function node_limit_node_validate($node, $form, &$form_state) {
  * @param $node
  *   The node to check.
  */
-function _node_limit_violates_limit(&$node) {
+function _node_limit_violates_limit(&$node, $context = '') {
   if ($node->uid == 1 || user_access(NODE_LIMIT_PERM_OVERRIDE)) {
     return FALSE;
   }
@@ -237,7 +234,9 @@ function _node_limit_violates_limit(&$node) {
     }
     $select = _node_limit_sql($limit['lid']);
     $count = $select->execute()->fetchField();
-    if ($count >= $limit['nlimit']) {
+    if ($count >= $limit['nlimit']  && empty($context)) {
+      $nodetype = node_type_get_type($node);
+      drupal_set_message(t("You can't create more content of type !type. Please contact Site Administrator for more information.", array('!type' => check_plain($nodetype->name))), 'error');
       return TRUE;
     }
   }
@@ -276,12 +275,12 @@ function node_limit_limits(&$node) {
     ->fields('nl')
     ->orderBy('weight', 'ASC')
     ->execute();
-  
+
   $applicable_limits = array();
   foreach ($query as $row) {
     // This particular limit id.
     $lid = $row->lid;
-    $applies = TRUE; 
+    $applies = TRUE;
 
     $submodule_applies = module_invoke_all('node_limit_applies_in_context', $lid, $node, $user);
     foreach ($submodule_applies as $module => $module_applies) {
@@ -378,8 +377,8 @@ function node_limit_list_limits() {
   }
   else {
     $form['create'] = array(
-      '#type' => 'link', 
-      '#title' => t('Add a new node limit'), 
+      '#type' => 'link',
+      '#title' => t('Add a new node limit'),
       '#href' => 'admin/structure/node_limit/add'
     );
   }
@@ -453,7 +452,7 @@ function node_limit_limit_form($form, &$form_state, $limit = FALSE) {
       'title' => '',
       'weight' => 0,
       'nlimit' => NODE_LIMIT_NO_LIMIT,
-    );      
+    );
   }
 
   $form = array();
@@ -568,7 +567,7 @@ function node_limit_limit_form_submit($form_id, &$form_state) {
       }
     }
   }
-  
+
   node_limit_save($limit);
 
   $form_state['redirect'] = 'admin/structure/node_limit';
@@ -656,7 +655,7 @@ function node_limit_load($lid) {
 
 /**
  * Delete node limits
- * 
+ *
  * @param $lid
  *   The limit id.
  * @param $silent
@@ -674,7 +673,7 @@ function node_limit_delete($lids, $silent = FALSE) {
     ->execute();
 
   module_invoke_all('node_limit_delete', $lids);
-  
+
   if ($num > 0 && !$silent) {
     drupal_set_message(t('Deleted !num.', array('!num' => format_plural((int) $num, '1 limit rule', '@count limit rules'))));
   }
@@ -682,7 +681,7 @@ function node_limit_delete($lids, $silent = FALSE) {
 
 /**
  * Callback to save a node limit back to the database.
- * 
+ *
  * @param $limit
  *   The limit data.
  */
