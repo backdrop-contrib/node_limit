@@ -88,6 +88,13 @@ function node_limit_menu() {
     'access arguments' => array(NODE_LIMIT_PERM_ADMIN),
     'type' => MENU_CALLBACK
   );
+  $items['admin/structure/node_limit/settings'] = array(
+    'title' => 'Node Limits settings',
+    'page callback'  => 'drupal_get_form',
+    'page arguments' => array('node_limit_settings_form'),
+    'access arguments' => array(NODE_LIMIT_PERM_ADMIN),
+    'type' => MENU_LOCAL_TASK,
+  );
 
   return $items;
 }
@@ -185,7 +192,8 @@ function node_limit_node_prepare($node) {
     //we have a violation!
     //and this is a new node
     $nodetype = node_type_get_type($node);
-    drupal_set_message(t("You can't create more content of type !type", array('!type' => check_plain($nodetype->name))), 'error');
+    // Display message for user and redirect based on node limit settings.
+    node_limit_message($nodetype);
 
     // Avoid redirection loop if there is just one content type
     $count = 0;
@@ -236,7 +244,8 @@ function _node_limit_violates_limit(&$node, $context = '') {
     $count = $select->execute()->fetchField();
     if ($count >= $limit['nlimit']  && empty($context)) {
       $nodetype = node_type_get_type($node);
-      drupal_set_message(t("You can't create more content of type !type. Please contact Site Administrator for more information.", array('!type' => check_plain($nodetype->name))), 'error');
+      // Display message for user and redirect based on node limit settings.
+      node_limit_message($nodetype);
       return TRUE;
     }
   }
@@ -701,5 +710,111 @@ function node_limit_save($limit) {
     $applies = isset($limit[$module]);
     $element = $applies ? $limit[$module] : '';
     module_invoke($module, 'node_limit_save', $limit['lid'], $applies, $element);
+  }
+}
+
+/**
+ * Form of settings node limit module.
+ */
+function node_limit_settings_form($form, &$form_state) {
+  $types = array();
+
+  // Get all content types on the site.
+  $content_types = node_type_get_types();
+  foreach ($content_types as $type) {
+    $types[$type->type] = $type->name;
+  }
+
+  $form['node_limit_global_msg'] = array(
+    '#type'  => 'textarea',
+    '#title' => t('Global message'),
+    '#required' => TRUE,
+    '#description' => t('Available variables are: [node_limit:type_name], [node_limit:type_title]'),
+    '#rows'  => 2,
+    '#default_value' => variable_get('node_limit_global_msg', t("You can't create more content of type [node_limit:type_title]")),
+  );
+  $form['node_limit_global_redirect'] = array(
+    '#type'  => 'textfield',
+    '#title' => t('Global redirect path'),
+    '#default_value' => variable_get('node_limit_global_redirect', NULL),
+    '#description'   => t("Available variables are: [node_limit:type_name], [node_limit:type_title] (Leave empty if you don't need redirect)"),
+  );
+
+  if (!empty($types)) {
+    $form['node_limit_custom_msg'] = array(
+      '#type'  => 'checkbox',
+      '#title' => t('Enable custom error message'),
+      '#default_value' => variable_get('node_limit_custom_msg', NULL),
+    );
+  }
+
+  foreach ((array) $types as $machine_name => $title) {
+    $settings = variable_get('node_limit_settings_' . $machine_name);
+    $form['custom_msg']['node_limit_settings_' . $machine_name] = array(
+      '#type'  => 'fieldset',
+      '#title' => $title,
+      '#collapsible' => TRUE,
+      '#collapsed'   => TRUE,
+      '#tree'   => TRUE,
+      '#states' => array(
+        'visible' => array(
+          ':input[name="node_limit_custom_msg"]' => array('checked' => TRUE),
+        ),
+      ),
+    );
+    $form['custom_msg']['node_limit_settings_' . $machine_name]['message_' . $machine_name] = array(
+      '#type'  => 'textarea',
+      '#title' => t('Message'),
+      '#rows'  => 2,
+      '#default_value' => $settings['message_' . $machine_name],
+    );
+    $form['custom_msg']['node_limit_settings_' . $machine_name]['redirect_' . $machine_name] = array(
+      '#type'  => 'textfield',
+      '#title' => t('Redirect path'),
+      '#default_value' => $settings['redirect_' . $machine_name],
+    );
+  }
+
+  return system_settings_form($form);
+}
+
+/**
+ * Display message for user and redirect based on node limit settings.
+ *
+ * @param string $nodetype
+ *   Load current node type object.
+ */
+function node_limit_message($nodetype) {
+  // Check if enabled custom message option.
+  $custom_msg = variable_get('node_limit_custom_msg', NULL);
+
+  if ($custom_msg) {
+    // Get settings of node type.
+    $settings = variable_get('node_limit_settings_' . $nodetype->type);
+    // Get redirect path.
+    $redirect_path = $settings['redirect_' . $nodetype->type];
+    // Format text.
+    $text = t($settings['message_' . $nodetype->type], array(
+      '[node_limit:type_title]' => check_plain($nodetype->name),
+      '[node_limit:type_name]' => $nodetype->type,
+    ));
+  }
+  else {
+    // Get global text message and redirect.
+    $text = variable_get('node_limit_global_msg', t("You can't create more content of type [node_limit:type_title]"));
+    $redirect_path = variable_get('node_limit_global_redirect', NULL);
+    // Format text.
+    $text = t($text, array(
+      '[node_limit:type_title]' => check_plain($nodetype->name),
+      '[node_limit:type_name]' => $nodetype->type,
+    ));
+  }
+
+  // Display message for user.
+  drupal_set_message($text, 'error');
+
+  // Redirect user if it exist.
+  if ($redirect_path != NULL) {
+    drupal_goto($redirect_path);
   }
 }
