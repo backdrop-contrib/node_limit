@@ -116,6 +116,20 @@ function node_limit_menu_alter(&$items) {
 }
 
 /**
+ * Implements hook_init().
+ */
+function node_limit_init() {
+  if (arg(0) == 'node' && arg(1) == 'add' && $type_url_str = arg(2)) {
+    $type = str_replace('-', '_', $type_url_str);
+    if (!node_limit_access($type)) {
+      $nodetype = node_type_get_type($type);
+      // Display message for user and redirect based on node limit settings.
+      node_limit_message($nodetype);
+    }
+  }
+}
+
+/**
  * Rewriten access callback for node/add page.
  * Avoid access to this page when the user does not have the right to add any content type.
  */
@@ -243,9 +257,6 @@ function _node_limit_violates_limit(&$node, $context = '') {
     $select = _node_limit_sql($limit['lid']);
     $count = $select->execute()->fetchField();
     if ($count >= $limit['nlimit']  && empty($context)) {
-      $nodetype = node_type_get_type($node);
-      // Display message for user and redirect based on node limit settings.
-      node_limit_message($nodetype);
       return TRUE;
     }
   }
