@@ -42,8 +42,10 @@ function node_limit_user_node_limit_applies_in_context($lid, $node, $user) {
  */
 function node_limit_user_node_limit_sql($lid, SelectQuery $select) {
   $limit = node_limit_user_node_limit_load($lid);
-  if (empty($limit)) return;
-  
+  if (empty($limit)) {
+    return;
+  }
+
   $select->condition('uid', $limit['node_limit_user']['uid']);
 }
 
@@ -74,13 +76,13 @@ function node_limit_user_node_limit_element_validate($element) {
    */
   $potential_user = user_load_by_name($element);
   if ($potential_user->uid == 1) {
-    //we cannot apply a limit to user:1
+    // We cannot apply a limit to user:1.
     return array(
       'error' => t('Node Limits cannot be applied to User #1')
     );
   }
   elseif ($potential_user === FALSE) {
-    //unknown user
+    // This means that this is an unknown user.
     return array(
       'error' => t('Unknown user "!user"', array('!user' => $element))
     );
@@ -93,25 +95,30 @@ function node_limit_user_node_limit_element_validate($element) {
  */
 function node_limit_user_node_limit_save($lid, $applies, $element) {
   if ($applies) {
-    // In the clone context, $element is an array containing 
-    // the uid and the user name
+    // In the clone context, $element is an array containing
+    // the uid and the username.
     if (is_array($element)) {
       $uid = $element['uid'];
     }
-    // In the creation/edition context
-    // $element contains the username of the user
-    // user_load based on the name to get the uid
+    /*
+     * In the creation/edition context, $element contains the username of the user.
+     * We then call user_load based on the name to get the uid.
+     */
     else {
       $user = user_load_by_name($element);
       $uid = $user->uid;
     }
-
-    db_insert('node_limit_user')
-      ->fields(array(
-        'lid' => $lid,
-        'uid' => $uid,
-      ))
-      ->execute();
+    // @TODO: Error catching behavior
+    try {
+      db_insert('node_limit_user')
+        ->fields(array(
+          'lid' => $lid,
+          'uid' => $uid,
+        ))
+        ->execute();
+    } catch (FieldsOverlapException $e) {
+    } catch (NoFieldsException $e) {
+    }
   }
 }
 

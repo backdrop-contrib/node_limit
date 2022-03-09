@@ -5,7 +5,9 @@
  * Installation functions for module node_limit.
  */
 
-if (!defined("NODE_LIMIT_NO_LIMIT")) define("NODE_LIMIT_NO_LIMIT", -1);
+if (!defined("NODE_LIMIT_NO_LIMIT")) {
+  define("NODE_LIMIT_NO_LIMIT", -1);
+}
 
 /**
  * Implements hook_schema().
@@ -52,32 +54,45 @@ function node_limit_schema() {
 }
 
 /**
- * Implements hook_update_N().
- * Renaming limit field to avoid mysql restricted name usage.
+ * Implements hook_install()/
+ *
+ * In this case, we tack on some information to the existing node types, specifically the node limit access callback.
+ * @TODO: Implement.
  */
-function node_limit_update_7001() {
-  // Cannot use db_change_field() because of the restricted name
-  $ret = db_query("ALTER TABLE {node_limit} CHANGE `limit` `limit_count` INT(11) NOT NULL DEFAULT '-1' COMMENT 'The node limit for this limit'");
-  return !empty($ret);
+function node_limit_install() {
+  foreach (node_type_get_types() as $type) {
+    // Use the config for the Node.
+    $config = config('node.type.' . $type->type);
+    // @TODO: Set the initial values
+    // $config->set('settings.draft_enabled', 1);
+    // $config->set('settings.skip_required', 0);
+    $config->save();
+  }
+}
+
+function node_limit_uninstall() {
+  foreach (node_type_get_types() as $type) {
+    // Use the config for the Node.
+    $config = config('node.type.' . $type->type);
+    // Clear the Node Limit-specific settings.
+    // $config->clear('settings.draft_enabled');
+    // $config->clear('settings.skip_required');
+    $config->save();
+  }
 }
 
 /**
- * Implements hook_update_N().
- * Renaming limit_count field to keep names consistency.
+ * Implements hook_update_last_removed().
  */
-function node_limit_update_7002() {
-  $ret = db_change_field('node_limit', 'limit_count', 'nlimit', 
-    array(
-      'description' => 'The node limit for this limit',
-      'type' => 'int',
-      'not null' => TRUE,
-      'default' => NODE_LIMIT_NO_LIMIT
-    ));
-  return !empty($ret);
+function node_limit_update_last_removed() {
+  return 7002;
 }
 
+// @TODO: Rework this with CONFIG
 /**
  * Implements hook_disable().
+ *
+ * Deletes any variables where the name starts with 'node_limit_' from the variables table.
  */
 function node_limit_disable() {
   db_delete('variable')

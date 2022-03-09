@@ -1,6 +1,11 @@
 name = Node Limit
 description = Allows admins to restrict the number of nodes that may be created.
 package = Node Limit
-core = 7.x
+backdrop = 1.x
+type = module
 
 configure = admin/structure/node_limit
+
+
+
+

@@ -1,18 +1,18 @@
 <?php
 /**
  * @file
- * Node_limit api reference.
+ * Node Limit API reference.
  */
 
 /**
  * Check node limit context.
- * 
+ *
  * Called when trying to know which submodule is concerned by a given node limit.
  * Each of them have to answer with an integer as follow :
  *   NODE_LIMIT_LIMIT_NEUTRAL if the node limit do nos use this submodule ;
  *   NODE_LIMIT_LIMIT_DOESNT_APPLY if this submodule is not concerned ;
  *   NODE_LIMIT_LIMIT_DOES_APPLY if this submodule is concerned.
- * 
+ *
  * @param int $lid
  *   The node limit id.
  * @param object $node
@@ -20,13 +20,13 @@
  * @param object $user
  *   The user to check.
  * @return array
- *   An array with a single key-value pair. The key must be the name of the 
+ *   An array with a single key-value pair. The key must be the name of the
  *   submodule, and the value is an integer between 0 and 2 inclusive.
  */
 function hook_node_limit_applies_in_context($lid, $node, $user) {
   // Load limit data
   $limit = submodule_node_limit_load($lid);
-  
+
   $applies = NODE_LIMIT_LIMIT_DOES_APPLY;
   if (empty($limit)) {
     $applies = NODE_LIMIT_LIMIT_NEUTRAL;
@@ -40,9 +40,9 @@ function hook_node_limit_applies_in_context($lid, $node, $user) {
 
 /**
  * Delete submodules' data.
- * 
+ *
  * Called when deleting a node_limit.
- * 
+ *
  * @param array $lids
  *   An array of node limit ids. Cannot be empty.
  */
@@ -54,16 +54,16 @@ function hook_node_limit_delete($lids) {
 
 /**
  * Return submodules' form elements.
- * 
- * You may set the value '#custom_render' => true if your element requires a 
- * custom rendering. The $lid parameter is given if the user is editing 
- * (as opposed to adding) a node limit.  The implementor should fill in a 
+ *
+ * You may set the value '#custom_render' => true if your element requires a
+ * custom rendering. The $lid parameter is given if the user is editing
+ * (as opposed to adding) a node limit.  The implementor should fill in a
  * #default_value for the element.
- * 
+ *
  * @param int $lid
  *   The node limit id.
  * @return array
- *   An array with a single key-value pair. The key must be the name of the 
+ *   An array with a single key-value pair. The key must be the name of the
  *   submodule, and the value is an element in form api.
  */
 function hook_node_limit_element($lid = 0) {
@@ -81,10 +81,10 @@ function hook_node_limit_element($lid = 0) {
 
 /**
  * Validate a submodules' elements values.
- * 
- * Called when the user attempts to add or edit a Node Limit.  The implementor 
+ *
+ * Called when the user attempts to add or edit a Node Limit.  The implementor
  * of the hook has the opportunity to validate the value the user entered.
- * 
+ *
  * @param object $element
  *   The element.
  * @return array
@@ -114,13 +114,13 @@ function hook_node_limit_element_validate($element) {
 
 /**
  * Load submodules' data.
- * 
+ *
  * Called when node_limit loads a limit from the database.
- * 
+ *
  * @param int $lid
  *   The node limit id.
  * @return array
- *   An array with a single key-value pair. The key must be the name of the 
+ *   An array with a single key-value pair. The key must be the name of the
  *   submodule, and the value is an array containing submodule's data.
  */
 function hook_node_limit_load($lid) {
@@ -144,10 +144,10 @@ function hook_node_limit_load($lid) {
 
 /**
  * Special render for special elements.
- * 
- * Called if the element returned from hook_node_limit_element has 
+ *
+ * Called if the element returned from hook_node_limit_element has
  * '#custom_render' => true.
- * 
+ *
  * @param object $element
  *   The element.
  * @return string
@@ -160,9 +160,9 @@ function hook_node_limit_render_element(&$element) {
 
 /**
  * Save submodules' data.
- * 
+ *
  * Called when saving a node limit for each submodule individually.
- * 
+ *
  * @param int $lid
  *   The node limit id
  * @param bool $applies
@@ -187,9 +187,9 @@ function hook_node_limit_save($lid, $applies, $element) {
 
 /**
  * Improve node limit count request.
- * 
+ *
  * Called when counting nodes to know if a limit has been reached.
- * 
+ *
  * @param int $lid
  *   The node limit id
  * @param SelectQuery $select
@@ -197,7 +197,9 @@ function hook_node_limit_save($lid, $applies, $element) {
  */
 function hook_node_limit_sql($lid, $select) {
   $limit = submodule_node_limit_load($lid);
-  if (empty($limit)) return;
-  
+  if (empty($limit)) {
+    return;
+  }
+
   $select->condition('uid', $limit['submodule']['uid']);
 }

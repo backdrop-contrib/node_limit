@@ -5,7 +5,9 @@
  * Module to restrict the number of nodes a user or role may create.
  */
 
-if (!defined("NODE_LIMIT_NO_LIMIT")) define("NODE_LIMIT_NO_LIMIT", -1);
+if (!defined("NODE_LIMIT_NO_LIMIT")) {
+  define("NODE_LIMIT_NO_LIMIT", -1);
+}
 
 define("NODE_LIMIT_PERM_ADMIN", "administer node limits");
 define("NODE_LIMIT_PERM_OVERRIDE", "override node limits");
@@ -15,6 +17,17 @@ define("NODE_LIMIT_LIMIT_DOES_APPLY", 1);
 define("NODE_LIMIT_LIMIT_NEUTRAL", 2);
 
 /**
+ * Implements hook_config_info().
+ */
+function node_limit_config_info() {
+  $prefixes['node_limit.node_limit.settings'] = array(
+    'label' => t('Settings for Node Limit'),
+    'group' => t('Node Limit'),
+  );
+  return $prefixes;
+}
+
+  /**
  * Implements hook_permission().
  */
 function node_limit_permission() {
@@ -32,9 +45,12 @@ function node_limit_permission() {
 
 /**
  * Implements hook_admin_paths().
+ * @TODO: Wait a minute. The logic here says that if the variable exists, set these paths? Would't we just set them by default?
+ * This function is unnecessary. https://api.drupal.org/api/drupal/modules%21system%21system.api.php/function/hook_admin_paths/7.x
  */
+/*
 function node_limit_admin_paths() {
-  if (variable_get('node_admin_theme')) {
+  config_get('node_limit.settings', 'node_admin_theme');
     $paths = array(
       'admin/structure/node_limit' => TRUE,
       'admin/structure/node_limit/*' => TRUE,
@@ -42,6 +58,7 @@ function node_limit_admin_paths() {
     return $paths;
   }
 }
+*/
 
 /**
  * Implements hook_menu().
@@ -50,7 +67,7 @@ function node_limit_menu() {
   $items = array();
   $items['admin/structure/node_limit'] = array(
     'title' => 'Node Limits',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('node_limit_list_limits'),
     'access arguments' => array(NODE_LIMIT_PERM_ADMIN)
   );
@@ -62,21 +79,21 @@ function node_limit_menu() {
   );
   $items['admin/structure/node_limit/add'] = array(
     'title' => 'Add Node Limit',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('node_limit_limit_form'),
     'access arguments' => array(NODE_LIMIT_PERM_ADMIN),
     'type' => MENU_LOCAL_TASK
   );
   $items['admin/structure/node_limit/%node_limit'] = array(
     'title' => 'Edit Node Limit',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('node_limit_limit_form', 3),
     'access arguments' => array(NODE_LIMIT_PERM_ADMIN),
     'type' => MENU_LOCAL_TASK
   );
   $items['admin/structure/node_limit/%node_limit/delete'] = array(
     'title' => 'Delete Node Limit',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('node_limit_delete_form', 3),
     'access arguments' => array(NODE_LIMIT_PERM_ADMIN),
     'type' => MENU_CALLBACK
@@ -90,7 +107,7 @@ function node_limit_menu() {
   );
   $items['admin/structure/node_limit/settings'] = array(
     'title' => 'Node Limits settings',
-    'page callback'  => 'drupal_get_form',
+    'page callback'  => 'backdrop_get_form',
     'page arguments' => array('node_limit_settings_form'),
     'access arguments' => array(NODE_LIMIT_PERM_ADMIN),
     'type' => MENU_LOCAL_TASK,
@@ -103,12 +120,15 @@ function node_limit_menu() {
  * Implements hook_menu_alter().
  */
 function node_limit_menu_alter(&$items) {
+  $config = config('node_limit.settings');
   node_type_cache_reset();
   foreach (node_type_get_types() as $type) {
     $type_url_str = str_replace('_', '-', $type->type);
     // Saving old access callbacks to allow other modules to define their own
-    variable_set('node_limit_' . $type->type . '_access_callback', $items['node/add/' . $type_url_str]['access callback']);
-    variable_set('node_limit_' . $type->type . '_access_arguments', $items['node/add/' . $type_url_str]['access arguments']);
+    // @TODO: Oh, crap. Dynamic settings. Dammit.
+    // @TODO: Check to see if this is a legit approach.
+    $config->set('node_limit_' . $type->type . '_access_callback', $items['node/add/' . $type_url_str]['access callback']);
+    $config->set('node_limit_' . $type->type . '_access_arguments', $items['node/add/' . $type_url_str]['access arguments']);
     $items['node/add/' . $type_url_str]['access callback'] = 'node_limit_access';
     $items['node/add/' . $type_url_str]['access arguments'] = array($type->type);
   }
@@ -130,8 +150,10 @@ function node_limit_init() {
 }
 
 /**
- * Rewriten access callback for node/add page.
+ * Rewritten access callback for node/add page.
  * Avoid access to this page when the user does not have the right to add any content type.
+ *
+ * @return bool
  */
 function _node_limit_add_access() {
   $types = node_type_get_types();
@@ -158,10 +180,11 @@ function _node_limit_add_access() {
  */
 function node_limit_access($type, $context = '', $account = NULL) {
   global $user;
+  $config = config('node_limit.settings');
   if (empty($account)) {
     $account = $user;
   }
-  $access = &drupal_static(__FUNCTION__, array());
+  $access = &backdrop_static(__FUNCTION__, array());
   if (!array_key_exists($account->uid, $access)) {
     $access[$account->uid] = array();
   }
@@ -170,12 +193,13 @@ function node_limit_access($type, $context = '', $account = NULL) {
     $node = new stdClass();
     $node->uid = $account->uid;
     $node->type = $type;
-    $oldCallback  = variable_get('node_limit_' . $type . '_access_callback');
-    $oldArguments = variable_get('node_limit_' . $type . '_access_arguments', array());
-    $oldAccess = function_exists($oldCallback) ? call_user_func_array($oldCallback, $oldArguments) : TRUE;
+    // @TODO: Oh, crap. Dynamic settings. Dammit.
+    // @TODO: Using the example set by the Save Draft module, these are, by default, set in the node_limit_install().
+    $oldCallback  = $config->get('node_limit_' . $type . '_access_callback');
+    $oldArguments = $config->get('node_limit_' . $type . '_access_arguments', array());
+    $oldAccess = !function_exists($oldCallback) || call_user_func_array($oldCallback, $oldArguments);
     $access[$account->uid][$type] = !_node_limit_violates_limit($node, $context) && $oldAccess;
   }
-
   return $access[$account->uid][$type];
 }
 
@@ -203,8 +227,8 @@ function node_limit_theme() {
  */
 function node_limit_node_prepare($node) {
   if (empty($node->nid) && _node_limit_violates_limit($node)) {
-    //we have a violation!
-    //and this is a new node
+    // This means there is a violation and this is a new node.
+    // Get the Node Type object or, potentially, FALSE if the node cannot be found.
     $nodetype = node_type_get_type($node);
     // Display message for user and redirect based on node limit settings.
     node_limit_message($nodetype);
@@ -217,10 +241,10 @@ function node_limit_node_prepare($node) {
       }
     }
     if ($count > 1) {
-        drupal_goto('node/add');
+      backdrop_goto('node/add');
     }
     else {
-        drupal_goto('');
+      backdrop_goto();
     }
   }
 }
@@ -243,20 +267,22 @@ function node_limit_node_validate($node, $form, &$form_state) {
  *
  * @param $node
  *   The node to check.
+ * @param string $context
+ * @return bool
  */
-function _node_limit_violates_limit(&$node, $context = '') {
+function _node_limit_violates_limit(&$node, string $context = '') {
   if ($node->uid == 1 || user_access(NODE_LIMIT_PERM_OVERRIDE)) {
     return FALSE;
   }
   $limits = node_limit_limits($node);
-  foreach ($limits as $idx => $lid) {
+  foreach ($limits as $lid) {
     $limit = node_limit_load($lid);
     if ($limit['nlimit'] == NODE_LIMIT_NO_LIMIT) {
       continue;
     }
     $select = _node_limit_sql($limit['lid']);
     $count = $select->execute()->fetchField();
-    if ($count >= $limit['nlimit']  && empty($context)) {
+    if ($count >= $limit['nlimit']   && empty($context)) {
       return TRUE;
     }
   }
@@ -267,11 +293,12 @@ function _node_limit_violates_limit(&$node, $context = '') {
  * Generates the sql statement to find the nodes that apply to a particular limit.
  * Modules that implement hook_node_limit_sql() should sprintf their arguments
  * into the returned array.
- * This will be changed in Drupal 7, which will be able to accept an array of
+ * This will be changed in backdrop 7, which will be able to accept an array of
  * arguments to db_query().
  *
  * @param $lid
  *   Identifier of limit rule.
+ * @return SelectQuery|stdClass[]
  */
 function _node_limit_sql($lid) {
   $select = db_select('node', 'n');
@@ -322,7 +349,8 @@ function node_limit_limits(&$node) {
 /**
  * Theme the node limit list form.
  */
-function theme_node_limit_list_limits($variables) {
+function theme_node_limit_list_limits($variables)
+{
   $form = $variables['form'];
 
   $rows = array();
@@ -331,15 +359,15 @@ function theme_node_limit_list_limits($variables) {
       $limit = &$form['limits'][$key];
 
       $row = array();
-      $row[] = drupal_render($limit['title']);
-      $row[] = drupal_render($limit['limit']);
+      $row[] = backdrop_render($limit['title']);
+      $row[] = backdrop_render($limit['limit']);
       if (isset($limit['weight'])) {
         $limit['weight']['#attributes']['class'] = array('node_limit-weight');
-        $row[] = drupal_render($limit['weight']);
+        $row[] = backdrop_render($limit['weight']);
       }
-      $row[] = drupal_render($limit['edit']);
-      $row[] = drupal_render($limit['list']);
-      $row[] = drupal_render($limit['clone']);
+      $row[] = backdrop_render($limit['edit']);
+      $row[] = backdrop_render($limit['list']);
+      $row[] = backdrop_render($limit['clone']);
       $rows[] = array('data' => $row, 'class' => array('draggable'));
     }
   }
@@ -348,10 +376,16 @@ function theme_node_limit_list_limits($variables) {
   $header[] = t('Limit');
   if (isset($form['save'])) {
     $header[] = t('Weight');
-    drupal_add_tabledrag('node_limit', 'order', 'sibling', 'node_limit-weight');
+    backdrop_add_tabledrag('node_limit', 'order', 'sibling', 'node_limit-weight');
   }
   $header[] = array('data' => t('Actions'), 'colspan' => '3');
-  return theme('table', array('header' => $header, 'rows' => $rows, 'empty' => t('No limit available.') . ' ' . drupal_render($form['create']), 'attributes' => array('id' => 'node_limit'))) . drupal_render_children($form);
+  $output = "";
+  try {
+    $output = theme('table', array('header' => $header, 'rows' => $rows, 'empty' => t('No limit available.') . ' ' . backdrop_render($form['create']), 'attributes' => array('id' => 'node_limit'))) . backdrop_render_children($form);
+  } catch (Exception $e) {
+    watchdog_exception('Node Limit', $e);
+  }
+  return $output;
 }
 
 /**
@@ -408,58 +442,61 @@ function node_limit_list_limits() {
 
 /**
  * Save the module weights.
+ *
+ * @param $form_id
+ * @param $form_state
  */
 function node_limit_list_limits_submit($form_id, &$form_state) {
   foreach ($form_state['values']['limits'] as $lid => $info) {
-    $query = db_update('node_limit')
+    db_update('node_limit')
       ->fields(array(
         'weight' => $info['weight']
       ))
       ->condition('lid', $lid)
       ->execute();
   }
-  drupal_set_message(t('Limits saved!'));
+  backdrop_set_message(t('Limits saved!'));
 }
 
 /**
  * Theme the admin settings form so that we have tables inside fieldsets.
  */
 /*
-function theme_node_limit_limit_form($variables) {
-  $form = $variables['form'];
-var_dump($form);
-  if (!isset($form['info'])) {
-    return;
-  }
-  $rows = array();
+ function theme_node_limit_limit_form($variables) {
+ $form = $variables['form'];
+ var_dump($form);
+ if (!isset($form['info'])) {
+ return;
+ }
+ $rows = array();
 
-  if (!empty($form['node_limit_elements'])) {
-    foreach ($form['node_limit_elements'] as $module => &$element) {
-      if (is_array($element['applies']) && is_array($element['element'])) {
-        if ($element['element']['#custom_render'] === TRUE && module_hook($module, 'node_limit_render_element')) {
-          // We can't use module_invoke because form elements must be passed byref.
-          $func = $module . '_node_limit_render_element';
-          $rendered_element = $func($element['element']);
-        }
-        else {
-          $rendered_element = drupal_render($element['element']);
-        }
-        $rows[] = array(
-          drupal_render($element['applies']),
-          $rendered_element
-        );
-      }
-    }
-  }
+ if (!empty($form['node_limit_elements'])) {
+ foreach ($form['node_limit_elements'] as $module => &$element) {
+ if (is_array($element['applies']) && is_array($element['element'])) {
+ if ($element['element']['#custom_render'] === TRUE && module_hook($module, 'node_limit_render_element')) {
+ // We can't use module_invoke because form elements must be passed byref.
+ $func = $module . '_node_limit_render_element';
+ $rendered_element = $func($element['element']);
+ }
+ else {
+ $rendered_element = backdrop_render($element['element']);
+ }
+ $rows[] = array(
+ backdrop_render($element['applies']),
+ $rendered_element
+ );
+ }
+ }
+ }
 
-  $output = drupal_render($form['info']);
-  if (count($rows) > 0) {
-    $output .= theme('table', array(t('Applies to:'), ''), $rows);
-  }
-  $output .= drupal_render($form);
-  return $output;
-}
-// */
+ $output = backdrop_render($form['info']);
+ if (count($rows) > 0) {
+ $output .= theme('table', array(t('Applies to:'), ''), $rows);
+ }
+ $output .= backdrop_render($form);
+ return $output;
+ }
+ // */
 
 /**
  * Implements hook_form().
@@ -515,11 +552,13 @@ function node_limit_limit_form($form, &$form_state, $limit = FALSE) {
     $element['#title'] = '';
     $form['node_limit_elements'][$module]['element'] = $element;
   }
-  if (empty($form['node_limit_elements'])) unset($form['node_limit_elements']);
+  if (empty($form['node_limit_elements'])) {
+    unset($form['node_limit_elements']);
+  }
 
   $form['save'] = array(
     '#type' => 'submit',
-    '#value' => ($limit['lid'] > 0 ? t('Edit Node Limit') : t('Add Node Limit'))
+    '#value' => ($limit['lid'] > 0?t('Edit Node Limit') : t('Add Node Limit'))
   );
   return $form;
 }
@@ -591,7 +630,7 @@ function node_limit_limit_form_submit($form_id, &$form_state) {
   node_limit_save($limit);
 
   $form_state['redirect'] = 'admin/structure/node_limit';
-  drupal_set_message(t('Saved limit "%limit"', array('%limit' => $limit['title'])));
+  backdrop_set_message(t('Saved limit "%limit"', array('%limit' => $limit['title'])));
 }
 
 /**
@@ -600,7 +639,7 @@ function node_limit_limit_form_submit($form_id, &$form_state) {
  */
 function node_limit_delete_form($form, &$form_state, $limit) {
   if ($limit == FALSE) {
-    drupal_goto('admin/structure/node_limit');
+    backdrop_goto('admin/structure/node_limit');
   }
   $form = array(
     'lid' => array(
@@ -628,8 +667,8 @@ function node_limit_clone_limit($limit) {
   $limit['lid'] = _node_limit_next_limit_id();
   $limit['title'] = t('Clone of !title', array('!title' => $old_title));
   node_limit_save($limit);
-  drupal_set_message(t('Cloned limit "%limit"', array('%limit' => $old_title)));
-  drupal_goto('admin/structure/node_limit');
+  backdrop_set_message(t('Cloned limit "%limit"', array('%limit' => $old_title)));
+  backdrop_goto('admin/structure/node_limit');
 }
 
 /**
@@ -649,7 +688,7 @@ function _node_limit_next_limit_id() {
  *
  * @param $lid
  *   The limit id.
- * @return
+ * @return array|false
  *   FALSE if the limit couldn't be loaded; otherwise the limit rule.
  */
 function node_limit_load($lid) {
@@ -676,9 +715,8 @@ function node_limit_load($lid) {
 /**
  * Delete node limits
  *
- * @param $lid
- *   The limit id.
- * @param $silent
+ * @param $lids
+ * @param bool $silent
  *   Hide success message.
  */
 function node_limit_delete($lids, $silent = FALSE) {
@@ -695,7 +733,7 @@ function node_limit_delete($lids, $silent = FALSE) {
   module_invoke_all('node_limit_delete', $lids);
 
   if ($num > 0 && !$silent) {
-    drupal_set_message(t('Deleted !num.', array('!num' => format_plural((int) $num, '1 limit rule', '@count limit rules'))));
+    backdrop_set_message(t('Deleted !num.', array('!num' => format_plural((int) $num, '1 limit rule', '@count limit rules'))));
   }
 }
 
@@ -707,15 +745,21 @@ function node_limit_delete($lids, $silent = FALSE) {
  */
 function node_limit_save($limit) {
   node_limit_delete($limit['lid'], TRUE);
-
-  db_insert('node_limit')
-    ->fields(array(
-      'lid' => $limit['lid'],
-      'nlimit' => $limit['nlimit'],
-      'title' => $limit['title'],
-      'weight' => $limit['weight']
+  // Attempt to save the Node Limit to the database.
+  try {
+    db_insert('node_limit')
+      ->fields(array(
+        'lid' => $limit['lid'],
+        'nlimit' => $limit['nlimit'],
+        'title' => $limit['title'],
+        'weight' => $limit['weight']
       ))
-    ->execute();
+      ->execute();
+  }
+  catch (Exception $e) {
+    watchdog_exception('Node Limit', $e);
+  }
+
   $modules = module_implements('node_limit_save');
   foreach ($modules as $module) {
     $applies = isset($limit[$module]);
@@ -760,6 +804,9 @@ function node_limit_settings_form($form, &$form_state) {
   }
 
   foreach ((array) $types as $machine_name => $title) {
+    // @TODO: Set this default in the node_limit_install() function.
+    // @TODO: This might be problematic if this is a new node type. Consider how to implement updating that.
+    // @TODO: Perhaps this should be added to the node.settings.
     $settings = variable_get('node_limit_settings_' . $machine_name);
     $form['custom_msg']['node_limit_settings_' . $machine_name] = array(
       '#type'  => 'fieldset',
@@ -792,14 +839,17 @@ function node_limit_settings_form($form, &$form_state) {
 /**
  * Display message for user and redirect based on node limit settings.
  *
- * @param string $nodetype
+ * @param $nodetype
  *   Load current node type object.
  */
+// @TODO: This doesn't seem right. Check the menu hook to confirm.
 function node_limit_message($nodetype) {
   // Check if enabled custom message option.
-  $custom_msg = variable_get('node_limit_custom_msg', NULL);
+  $custom_message = config_get('node_limit.settings', 'custom_msg');
 
-  if ($custom_msg) {
+  // @TODO: Change logic so that if the custom message has value, make the settings.
+
+  if ($custom_message) {
     // Get settings of node type.
     $settings = variable_get('node_limit_settings_' . $nodetype->type);
     // Get redirect path.
@@ -822,10 +872,10 @@ function node_limit_message($nodetype) {
   }
 
   // Display message for user.
-  drupal_set_message($text, 'error');
+  backdrop_set_message($text, 'error');
 
-  // Redirect user if it exist.
+  // Redirect user if a redirect path exists.
   if ($redirect_path != NULL) {
-    drupal_goto($redirect_path);
+    backdrop_goto($redirect_path);
   }
 }

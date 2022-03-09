@@ -1,8 +1,10 @@
 name = Node Limit Interval
 description = Allows admins to apply a Node Limit to a time interval
 package = Node Limit
+backdrop = 1.x
+type = module
+
 dependencies[] = node_limit
-core = 7.x
 
 files[] = node_limit_interval.install
 files[] = node_limit_interval.module

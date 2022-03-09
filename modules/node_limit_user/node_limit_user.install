@@ -24,11 +24,7 @@ function node_limit_user_schema() {
         'unsigned' => TRUE,
       ),
     ),
-    //the limit-user combination is unique
-    /**
-     * this means that in the future, we may allow a limit to be applied to more
-     * than one user.  right now, though, its one-user-per-limit
-     */
+    // The limit-user combination is unique, so it is marked as such.
     'primary key' => array('lid', 'uid')
   );
 

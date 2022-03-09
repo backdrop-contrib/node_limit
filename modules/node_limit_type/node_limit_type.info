@@ -1,8 +1,10 @@
 name = Node Limit Type
 description = Allows admins to apply a Node Limit to a content type
 package = Node Limit
-dependencies[] = node_limit
-core = 7.x
+backdrop = 1.x
+type = module
 
-files[] = node_limit_type.install
-files[] = node_limit_type.module
+dependencies[] = node_limit
+
+;files[] = node_limit_type.install
+;files[] = node_limit_type.module

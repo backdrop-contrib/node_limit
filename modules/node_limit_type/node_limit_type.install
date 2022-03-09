@@ -25,11 +25,7 @@ function node_limit_type_schema() {
         'default' => ''
       )
     ),
-    //the limit-type combination is unique
-    /**
-     * this means that in the future, we may allow a limit to be applied to more
-     * than one type.  right now, though, its one-type-per-limit
-     */
+    // The limit-type combination is unique, so we mark it as such.
     'primary key' => array('lid', 'type')
   );
 
