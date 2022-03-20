@@ -5,7 +5,7 @@ This module allows administrators to limit the number of nodes that users may cr
 
 Requirements
 ------------
-This module has no requirements or dependencies.
+This module has no other requirements or dependencies.
 
 Installation
 ------------
@@ -27,7 +27,7 @@ Note: Registration will update previously registered classes with any
 new argument changes.
 
 ### node_limit_interval module
-<!-- @TODO: Paragraph description of the functionality of each module.
+<!-- @TODO: Paragraph description of the functionality of each module.-->
 This module provides a wizard-based UI for defining your
 Drupal-to-Backdrop migrations. The wizard is appropriate for
 non-technical users to configure and run the Drupal-to-Backdrop
@@ -69,15 +69,17 @@ Current Maintainers
 Credits
 -------
 - Ported to Backdrop CMS by [Ryan Ositis](https://github.com/rositis).
-- Based on [Node Limit](https://www.drupal.org/project/node_limit).
+- Based on [Node Limit](https://www.drupal.org/project/node_limit) for Drupal 7.
 - Current and past maintainers for the Drupal module:
-- Support for the Drupal module is also provided by ________.
+  - [Edouard Cunibil (DuaelFr)](https://www.drupal.org/u/duaelfr)
+  - [davedelong](https://www.drupal.org/u/davedelong)
+  - [Marco Vito Moscaritolo (mavimo)](https://www.drupal.org/u/mavimo)
+  - [Keyral (keyral)](https://www.drupal.org/u/keyral)
+  - [Neeraj Kumar (neerajskydiver)](https://www.drupal.org/u/neerajskydiver)
+  - [Adrian Cid Almaguer (adriancid)](https://www.drupal.org/u/adriancid)
 
 License
 -------
 This project is GPL v2.0 software.
 See the LICENSE.txt file in this directory for complete text.
 
-<-- If your project includes other libraries that are licensed in a way that is
-compatible with GPL v2, you can list that here too, for example: `Foo library is
-licensed under the MIT license.` -->

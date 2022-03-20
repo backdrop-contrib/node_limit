@@ -24,8 +24,7 @@ function node_limit_userofrole_schema() {
         'unsigned' => TRUE,
       )
     ),
-    //the limit-user combination is unique
-    
+    // The limit-user combination is unique, so we mark it as such.
     'primary key' => array('lid', 'rid')
   );
 

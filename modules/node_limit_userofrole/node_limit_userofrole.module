@@ -57,6 +57,8 @@ function node_limit_userofrole_node_limit_sql($lid, SelectQuery $select) {
 
 /**
  * Implements hook_node_limit_element().
+ *
+ * @TODO: Sort out proper Return statement.
  */
 function node_limit_userofrole_node_limit_element($lid = 0) {
   $limit = node_limit_userofrole_node_limit_load($lid);
@@ -99,17 +101,22 @@ function node_limit_userofrole_node_limit_element_validate($element) {
  */
 function node_limit_userofrole_node_limit_save($lid, $applies, $element) {
   if ($applies) {
-    // In the clone context, $element is an array containing 
+    // In the clone context, $element is an array containing
     // the rid and the role name
     if (is_array($element)) {
       $element = $element['rid'];
     }
-    db_insert('node_limit_userofrole')
-      ->fields(array(
-        'lid' => $lid,
-        'rid' => $element,
-      ))
-      ->execute();
+    // @TODO: Error handling in Catch
+    try {
+      db_insert('node_limit_userofrole')
+        ->fields(array(
+          'lid' => $lid,
+          'rid' => $element,
+        ))
+        ->execute();
+    } catch (FieldsOverlapException $e) {
+    } catch (NoFieldsException $e) {
+    }
   }
 }
 

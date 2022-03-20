@@ -24,7 +24,7 @@
  *   submodule, and the value is an integer between 0 and 2 inclusive.
  */
 function hook_node_limit_applies_in_context($lid, $node, $user) {
-  // Load limit data
+  // Load limit data.
   $limit = submodule_node_limit_load($lid);
 
   $applies = NODE_LIMIT_LIMIT_DOES_APPLY;

@@ -1,18 +1,13 @@
 {
     "_config_name": "node_limit.settings",
     "custom_msg": "",
-    "node_limit_global_msg": "",
-
-    Dynamic
-    "settings":
-    'node_limit_' . $type->type . '_access_callback',
-    'node_limit_' . $type->type . '_access_arguments'
-
+    "node_limit_global_msg": "You can't create more content of type [node_limit:type_title]",
+    "node_limit_global_redirect": "",
     "node_limit_message_editable": "",
     "node_limit_default_mail_subject": "",
     "node_limit_default_mail_body": "",
     "node_limit_default_replace_tokens": "",
-    "node_limit_use_users_email_replyto": "",
+    "node_limit_use_users_email_reply_to": "",
     "node_limit_manual_from": "",
     "node_limit_use_users_email": "",
     "node_limit_version_updated": 1,
