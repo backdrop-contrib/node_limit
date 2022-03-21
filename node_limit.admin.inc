@@ -91,6 +91,7 @@ function node_limit_list_limits_submit($form_id, &$form_state) {
  * Implements hook_form().
  */
 function node_limit_limit_form($form, &$form_state, $limit = FALSE) {
+  // If there isn't a value in $limit, it means we are adding a new Node Limit. Set the default values.
   if (empty($limit)) {
     $limit = array(
       'lid' => 0,
@@ -100,6 +101,7 @@ function node_limit_limit_form($form, &$form_state, $limit = FALSE) {
     );
   }
 
+  // Put together the form.
   $form = array();
   $form['#tree'] = TRUE;
   if ($limit['lid'] > 0) {
@@ -128,9 +130,11 @@ function node_limit_limit_form($form, &$form_state, $limit = FALSE) {
     '#type' => 'hidden',
     '#value' => $limit['weight']
   );
-
+  // @TODO: This is causing an issue when it tries to access the User Roles in the database.
+  // @TODO: Figure out how this works with the API and how the submodules load this information.
   $elements = module_invoke_all('node_limit_element', $limit['lid']);
   $form['node_limit_elements'] = array();
+  /*
   foreach ($elements as $module => $element) {
     $form['node_limit_elements'][$module]['applies'] = array(
       '#type' => 'checkbox',
@@ -140,6 +144,7 @@ function node_limit_limit_form($form, &$form_state, $limit = FALSE) {
     $element['#title'] = '';
     $form['node_limit_elements'][$module]['element'] = $element;
   }
+  */
   if (empty($form['node_limit_elements'])) {
     unset($form['node_limit_elements']);
   }

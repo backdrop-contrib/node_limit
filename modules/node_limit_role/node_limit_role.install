@@ -17,16 +17,19 @@ function node_limit_role_schema() {
         'type' => 'int',
         'not null' => TRUE
       ),
-      'rid' => array(
-        'description' => 'The {role}.rid to which this limit applies',
-        'type' => 'int',
+      'role' => array(
+        'description' => 'The Role machine name to which this limit applies',
+        'type' => 'varchar',
+        'length' => 64,
         'not null' => TRUE,
-        'unsigned' => TRUE,
+        'default' => ''
       )
     ),
     // The limit-user combination is unique, so we mark it as such.
-    'primary key' => array('lid', 'rid')
+    'primary key' => array('lid', 'role')
   );
 
   return $schema;
 }
+
+

@@ -13,7 +13,7 @@
 function node_limit_role_user_role_delete($role) {
   $limits = db_select('node_limit_role', 'src')
     ->fields('src', array('lid'))
-    ->condition('rid', $role->rid)
+    ->condition('role', $role->name)
     ->execute();
   $lids = array();
   foreach ($limits as $limit) {
@@ -32,9 +32,9 @@ function node_limit_role_node_limit_applies_in_context($lid, $node, $user) {
     $applies = NODE_LIMIT_LIMIT_NEUTRAL;
   }
   elseif (!empty($user)) {
-    $isRoleAnonymous = $limit['node_limit_role']['rid'] == DRUPAL_ANONYMOUS_RID;
-    $isRoleAuth = $limit['node_limit_role']['rid'] == DRUPAL_AUTHENTICATED_RID;
-    if (isset($user->roles[$limit['node_limit_role']['rid']]) || ($user->uid > 0 && $isRoleAnonymous) || ($user->uid == 0 && $isRoleAuth)) {
+    $isRoleAnonymous = $limit['node_limit_role']['role'] == BACKDROP_ANONYMOUS_ROLE;
+    $isRoleAuth = $limit['node_limit_role']['role'] == BACKDROP_AUTHENTICATED_ROLE;
+    if (isset($user->roles[$limit['node_limit_role']['role']]) || ($user->uid > 0 && $isRoleAnonymous) || ($user->uid == 0 && $isRoleAuth)) {
       $applies = NODE_LIMIT_LIMIT_DOES_APPLY;
     }
   }
@@ -50,16 +50,16 @@ function node_limit_role_node_limit_sql($lid, SelectQuery $select) {
     return;
   }
 
-  if ($limit['node_limit_role']['rid'] == DRUPAL_ANONYMOUS_RID) {
+  if ($limit['node_limit_role']['rid'] == BACKDROP_ANONYMOUS_ROLE) {
     $select->condition('uid', 0);
   }
-  elseif ($limit['node_limit_role']['rid'] == DRUPAL_AUTHENTICATED_RID) {
+  elseif ($limit['node_limit_role']['rid'] == BACKDROP_AUTHENTICATED_ROLE) {
     $select->condition('uid', 0, '!=');
   }
   else {
     $subselect = db_select('users_roles', 'ur')
       ->fields('ur', array('uid'))
-      ->condition('rid', $limit['node_limit_role']['rid']);
+      ->condition('role', $limit['node_limit_role']['role']);
     $select->condition('uid', $subselect, 'IN');
   }
 }
@@ -69,9 +69,9 @@ function node_limit_role_node_limit_sql($lid, SelectQuery $select) {
  */
 function node_limit_role_node_limit_element($lid = 0) {
   $limit = node_limit_role_node_limit_load($lid);
-  $rid = !empty($limit['node_limit_role']['rid']) ? $limit['node_limit_role']['rid'] : '';
+  $role = !empty($limit['node_limit_role']['role']) ? $limit['node_limit_role']['role'] : '';
 
-  $roles = user_roles();
+  $roles = user_roles(); // returns array of machine name => label in Backdrop.
 
   if (!empty($roles)) {
     return array(
@@ -79,10 +79,11 @@ function node_limit_role_node_limit_element($lid = 0) {
         '#type' => 'select',
         '#title' => t('Role'),
         '#options' => $roles,
-        '#default_value' => $rid
+        '#default_value' => $role
       )
     );
   }
+  return array();
 }
 
 /**
@@ -91,7 +92,7 @@ function node_limit_role_node_limit_element($lid = 0) {
 function node_limit_role_node_limit_element_validate($element) {
   /**
    * Validation:
-   * rid must be a role
+   * $element must be a role
    */
   $roles = user_roles();
   if (!isset($roles[$element])) {
@@ -111,18 +112,20 @@ function node_limit_role_node_limit_save($lid, $applies, $element) {
     // In the clone context, $element is an array containing
     // the rid and the role name
     if (is_array($element)) {
-      $element = $element['rid'];
+      $element = $element['machine_name'];
     }
-    // @TODO: Error handling in the Catch
     try {
       db_insert('node_limit_role')
         ->fields(array(
           'lid' => $lid,
-          'rid' => $element,
+          'role' => $element,
         ))
         ->execute();
     } catch (FieldsOverlapException $e) {
+      backdrop_set_message(t('The Node Limit failed to save.'));
+      watchdog_exception('node_limit_role', $e);
     } catch (NoFieldsException $e) {
+      watchdog_exception('node_limit_role', $e);
     }
   }
 }
@@ -138,22 +141,24 @@ function node_limit_role_node_limit_delete($lids) {
 
 /**
  * Implements hook_node_limit_load().
+ * Returns  the machine name and label information of the Role that a Node Limit has.
+ *
+ * @note
+ * Documentation on how this changed in Backdrop is available here:
+ * https://docs.backdropcms.org/change-records/converted-user-roles-to-cmi
  */
 function node_limit_role_node_limit_load($lid) {
-  $select = db_select('node_limit_role', 'nlr');
-  $select->join('role', 'r', 'r.rid = nlr.rid');
-  $select->fields('nlr')
-    ->fields('r', array('name'))
-    ->condition('lid', $lid);
+  // We want the Roles that have a Node Limit.
+  $result = db_query('SELECT role FROM node_limit_role WHERE lid = :lid', array(':lid' => $lid))->fetchField();
+  $info = user_role_load($result);
 
-  $info = $select->execute()->fetchAssoc();
-  if (empty($info['rid'])) {
-    return array();
+  if (!empty($info['name'])) {
+    return array(
+      'node_limit_role' => array(
+        'name' => $info->name, // The machine name
+        'label' => $info->label // The Role label (e.g. 'My role label')
+      )
+    );
   }
-  return array(
-    'node_limit_role' => array(
-      'rid' => $info['rid'],
-      'name' => $info['name']
-    )
-  );
+  return array();
 }
