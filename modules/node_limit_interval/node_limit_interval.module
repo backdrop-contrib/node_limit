@@ -107,11 +107,11 @@ function _node_limit_interval_interval_options() {
 function node_limit_interval_node_limit_element_validate($element) {
   /**
    * Validation:
-   * interval must be an integer greater than 0
-   * User must be in the {user} table
+   * The interval must be an integer greater than zero.
+   * The User must be in the {user} table
    */
   if (!is_numeric($element['interval']) || floatval($element['interval']) <= 0) {
-    //less than 0
+    // The submitted interval value is less than zero.
     return array(
       'error' => t('Time intervals must be an integer greater than 0'),
       'element' => 'interval'
@@ -137,7 +137,10 @@ function node_limit_interval_node_limit_save($lid, $applies, $element) {
         ))
         ->execute();
     } catch (FieldsOverlapException $e) {
+      backdrop_set_message(t('The Node Limit failed to save.'));
+      watchdog_exception('node_limit_interval', $e);
     } catch (NoFieldsException $e) {
+      watchdog_exception('node_limit_interval', $e);
     }
   }
 }

@@ -50,10 +50,10 @@ function node_limit_role_node_limit_sql($lid, SelectQuery $select) {
     return;
   }
 
-  if ($limit['node_limit_role']['rid'] == BACKDROP_ANONYMOUS_ROLE) {
+  if ($limit['node_limit_role']['role'] == BACKDROP_ANONYMOUS_ROLE) {
     $select->condition('uid', 0);
   }
-  elseif ($limit['node_limit_role']['rid'] == BACKDROP_AUTHENTICATED_ROLE) {
+  elseif ($limit['node_limit_role']['role'] == BACKDROP_AUTHENTICATED_ROLE) {
     $select->condition('uid', 0, '!=');
   }
   else {
@@ -69,9 +69,8 @@ function node_limit_role_node_limit_sql($lid, SelectQuery $select) {
  */
 function node_limit_role_node_limit_element($lid = 0) {
   $limit = node_limit_role_node_limit_load($lid);
-  $role = !empty($limit['node_limit_role']['role']) ? $limit['node_limit_role']['role'] : '';
-
-  $roles = user_roles(); // returns array of machine name => label in Backdrop.
+  $role = !empty($limit['node_limit_role']) ? $limit['node_limit_role'] : array();
+  $roles = user_roles(); // returns an array of machine name => label for each role.
 
   if (!empty($roles)) {
     return array(
@@ -79,8 +78,8 @@ function node_limit_role_node_limit_element($lid = 0) {
         '#type' => 'select',
         '#title' => t('Role'),
         '#options' => $roles,
-        '#default_value' => $role
-      )
+        '#default_value' => $role['name'],
+      ),
     );
   }
   return array();
@@ -151,8 +150,7 @@ function node_limit_role_node_limit_load($lid) {
   // We want the Roles that have a Node Limit.
   $result = db_query('SELECT role FROM node_limit_role WHERE lid = :lid', array(':lid' => $lid))->fetchField();
   $info = user_role_load($result);
-
-  if (!empty($info['name'])) {
+  if (!empty($info->name)) {
     return array(
       'node_limit_role' => array(
         'name' => $info->name, // The machine name

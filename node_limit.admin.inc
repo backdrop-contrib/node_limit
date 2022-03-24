@@ -134,7 +134,7 @@ function node_limit_limit_form($form, &$form_state, $limit = FALSE) {
   // @TODO: Figure out how this works with the API and how the submodules load this information.
   $elements = module_invoke_all('node_limit_element', $limit['lid']);
   $form['node_limit_elements'] = array();
-  /*
+
   foreach ($elements as $module => $element) {
     $form['node_limit_elements'][$module]['applies'] = array(
       '#type' => 'checkbox',
@@ -144,7 +144,7 @@ function node_limit_limit_form($form, &$form_state, $limit = FALSE) {
     $element['#title'] = '';
     $form['node_limit_elements'][$module]['element'] = $element;
   }
-  */
+  
   if (empty($form['node_limit_elements'])) {
     unset($form['node_limit_elements']);
   }
