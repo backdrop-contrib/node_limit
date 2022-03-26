@@ -43,23 +43,6 @@ function node_limit_permission() {
 }
 
 /**
- * Implements hook_admin_paths().
- * @TODO: Wait a minute. The logic here says that if the variable exists, set these paths? Would't we just set them by default?
- * This function is unnecessary. https://api.drupal.org/api/drupal/modules%21system%21system.api.php/function/hook_admin_paths/7.x
- */
-/*
-function node_limit_admin_paths() {
-  config_get('node_limit.settings', 'node_admin_theme');
-    $paths = array(
-      'admin/structure/node_limit' => TRUE,
-      'admin/structure/node_limit/*' => TRUE,
-    );
-    return $paths;
-  }
-}
-*/
-
-/**
  * Implements hook_menu().
  */
 function node_limit_menu() {
@@ -131,7 +114,7 @@ function node_limit_menu_alter(&$items) {
   foreach (node_type_get_types() as $type) {
     $type_url_str = str_replace('_', '-', $type->type);
     // Saving old access callbacks to allow other modules to define their own
-    // @TODO: Check to see if this is a legit approach.
+
     $config->set('node_limit_' . $type->type . '_access_callback', $items['node/add/' . $type_url_str]['access callback']);
     $config->set('node_limit_' . $type->type . '_access_arguments', $items['node/add/' . $type_url_str]['access arguments']);
     $items['node/add/' . $type_url_str]['access callback'] = 'node_limit_access';
@@ -198,8 +181,8 @@ function node_limit_access($type, $context = '', $account = NULL) {
     $node = new stdClass();
     $node->uid = $account->uid;
     $node->type = $type;
-    // @TODO: Oh, crap. Dynamic settings. Dammit.
-    // @TODO: Using the example set by the Save Draft module, these are, by default, set in the node_limit_install().
+
+    // These are, by default, set in the node_limit_install().
     $oldCallback  = $config->get('node_limit_' . $type . '_access_callback');
     $oldArguments = $config->get('node_limit_' . $type . '_access_arguments', array());
     $oldAccess = !function_exists($oldCallback) || call_user_func_array($oldCallback, $oldArguments);
@@ -295,9 +278,6 @@ function _node_limit_violates_limit(&$node, $context = '') {
  * Generates the SQL statement to find the nodes that apply to a particular limit.
  * Modules that implement hook_node_limit_sql() should sprintf their arguments
  * into the returned array.
- * @TODO:This will be changed for Drupal 7, which will be able to accept an array of
- * arguments to db_query().
- * @TODO: Switch to using db_query for performance reasons?
  *
  * @param $lid
  *   Identifier of limit rule.
@@ -316,7 +296,6 @@ function _node_limit_sql($lid) {
  *
  * @param $node
  *   The node object that may be limited.
- * @TODO: Convert to db_query for better performance.
  */
 function node_limit_limits(&$node) {
   $user = user_load($node->uid);
@@ -415,7 +394,7 @@ function node_limit_load($lid) {
   if (!is_numeric($lid)) {
     return FALSE;
   }
-  // @TODO: Convert to db_query for performance reasons.
+
   $info = db_select('node_limit', 'nl')
     ->fields('nl')
     ->condition('lid', $lid)
@@ -495,7 +474,7 @@ function node_limit_save($limit) {
  * @param $nodetype
  *   Load current node type object.
  */
-// @TODO: This doesn't seem right. Check the menu hook to confirm.
+
 function node_limit_message($nodetype) {
   $config = config('node_limit.settings');
   // Check if enabled custom message option.
@@ -505,7 +484,7 @@ function node_limit_message($nodetype) {
 
   if ($custom_message) {
     // Get settings of node type.
-    $settings = variable_get('node_limit_settings_' . $nodetype->type);
+    $settings = $config->get('node_limit_settings_' . $nodetype->type);
     // Get redirect path.
     $redirect_path = $settings['redirect_' . $nodetype->type];
     // Format text.

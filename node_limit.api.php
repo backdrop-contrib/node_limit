@@ -87,8 +87,7 @@ function hook_node_limit_element($lid = 0) {
  *
  * @param object $element
  *   The element.
- * @return array
- *   TODO explain
+ * @return array|bool
  */
 function hook_node_limit_element_validate($element) {
   /**
@@ -155,7 +154,7 @@ function hook_node_limit_load($lid) {
  */
 function hook_node_limit_render_element(&$element) {
   unset($element['submodule']['#title']);
-  return drupal_render($element['submodule']);
+  return backdrop_render($element['submodule']);
 }
 
 /**
@@ -176,12 +175,18 @@ function hook_node_limit_save($lid, $applies, $element) {
     // user_load based on the name to get the uid
     $user = user_load_by_name($element);
 
-    db_insert('submodule')
-      ->fields(array(
-        'lid' => $lid,
-        'uid' => $user->uid,
-      ))
-      ->execute();
+    try {
+      db_insert('submodule')
+        ->fields(array(
+          'lid' => $lid,
+          'uid' => $user->uid,
+        ))
+        ->execute();
+    } catch (FieldsOverlapException $e) {
+        watchdog_exception('node_limit', $e);
+    } catch (NoFieldsException $e) {
+      watchdog_exception('node_limit', $e);
+    }
   }
 }
 

@@ -27,7 +27,6 @@ function node_limit_list_limits() {
   $form = array('#tree' => TRUE);
   $form['limits'] = array();
 
-  // @TODO: Convert to db_query for performance reasons.
   $query = db_select('node_limit', 'nl')
     ->fields('nl')
     ->orderBy('weight', 'ASC')
@@ -74,7 +73,6 @@ function node_limit_list_limits() {
  * @param $form_state
  */
 function node_limit_list_limits_submit($form_id, &$form_state) {
-  // @TODO: Change to db_query for performance reasons.
   foreach ($form_state['values']['limits'] as $lid => $info) {
     db_update('node_limit')
       ->fields(array(
@@ -130,8 +128,7 @@ function node_limit_limit_form($form, &$form_state, $limit = FALSE) {
     '#type' => 'hidden',
     '#value' => $limit['weight']
   );
-  // @TODO: This is causing an issue when it tries to access the User Roles in the database.
-  // @TODO: Figure out how this works with the API and how the submodules load this information.
+
   $elements = module_invoke_all('node_limit_element', $limit['lid']);
   $form['node_limit_elements'] = array();
 
@@ -144,7 +141,7 @@ function node_limit_limit_form($form, &$form_state, $limit = FALSE) {
     $element['#title'] = '';
     $form['node_limit_elements'][$module]['element'] = $element;
   }
-  
+
   if (empty($form['node_limit_elements'])) {
     unset($form['node_limit_elements']);
   }
@@ -279,14 +276,8 @@ function node_limit_clone_limit($limit) {
  */
 function node_limit_settings_form($form, &$form_state) {
   $form = array();
-  $types = array();
-  $config = config('node_limit.settings');
 
-  // Get all content types on the site.
-  $content_types = node_type_get_types();
-  foreach ($content_types as $type) {
-    $types[$type->type] = $type->name;
-  }
+  $config = config('node_limit.settings');
 
   $form['node_limit_global_msg'] = array(
     '#type'  => 'textarea',
@@ -303,42 +294,41 @@ function node_limit_settings_form($form, &$form_state) {
     '#description'   => t("Available variables are: [node_limit:type_name], [node_limit:type_title] (Leave empty if you don't need redirect)"),
   );
 
-  if (!empty($types)) {
-    $form['node_limit_custom_msg'] = array(
-      '#type'  => 'checkbox',
-      '#title' => t('Enable custom error message'),
-      '#default_value' => $config->get('node_limit_custom_msg'),
-    );
-  }
+  // Set a custom error message for when a limit has been reached.
+  // If using the node_limit_type module, show the custom message for each of the Content Types.
+  if (module_exists('node_limit_type')) {
+    $types = node_type_get_types();
 
-  foreach ((array) $types as $machine_name => $title) {
-    // @TODO: Set this default in the node_limit_install() function.
-    // @TODO: This might be problematic if this is a new node type. Consider how to implement updating that.
-    // @TODO: Perhaps this should be added to the node.settings.
-    $settings = config_get('node_limit_settings_' . $machine_name);
-    $form['custom_msg']['node_limit_settings_' . $machine_name] = array(
-      '#type'  => 'fieldset',
-      '#title' => $title,
-      '#collapsible' => TRUE,
-      '#collapsed'   => TRUE,
-      '#tree'   => TRUE,
-      '#states' => array(
-        'visible' => array(
-          ':input[name="node_limit_custom_msg"]' => array('checked' => TRUE),
+    $form['custom_msg_activate'] = array(
+      '#type'  => 'checkbox',
+      '#name' => 'custom_msg_activate',
+      '#title' => t('Enable custom error messages by type.'),
+      '#default_value' => config_get('node_limit.settings', 'custom_msg_by_type'),
+    );
+
+    foreach ($types as $type) {
+      $form['custom_msg']['node_limit_settings_' . $type->type] = array(
+        '#type'  => 'fieldset',
+        '#title' => $type->name,
+        '#collapsible' => TRUE,
+        '#collapsed'   => TRUE,
+        '#tree'   => TRUE,
+        '#states' => array(
+          'visible' => array(':input[name="custom_msg_activate"]' => array('checked' => TRUE)),
         ),
-      ),
-    );
-    $form['custom_msg']['node_limit_settings_' . $machine_name]['message_' . $machine_name] = array(
-      '#type'  => 'textarea',
-      '#title' => t('Message'),
-      '#rows'  => 2,
-      '#default_value' => $settings['message_' . $machine_name],
-    );
-    $form['custom_msg']['node_limit_settings_' . $machine_name]['redirect_' . $machine_name] = array(
-      '#type'  => 'textfield',
-      '#title' => t('Redirect path'),
-      '#default_value' => $settings['redirect_' . $machine_name],
-    );
+      );
+      $form['custom_msg']['node_limit_settings_' . $type->type]['message_' . $type->type] = array(
+        '#type'  => 'textarea',
+        '#title' => t('Message'),
+        '#rows'  => 2,
+        '#default_value' => $type->settings['limit_custom_message'],
+      );
+      $form['custom_msg']['node_limit_settings_' . $type->type]['redirect_' . $type->type] = array(
+        '#type'  => 'textfield',
+        '#title' => t('Redirect path'),
+        '#default_value' => $type->settings['limit_access_callback'] // $settings['redirect_' . $type->type],
+      );
+    }
   }
 
   // Buttons
@@ -362,23 +352,7 @@ function node_limit_settings_form($form, &$form_state) {
  * @param $form_state
  */
 function node_limit_settings_form_validate($form, &$form_state) {
-  /*
-  if (strpos($form_state['triggering_element']['#id'], 'remove') === FALSE) {
-    $breakpoints = isset($form_state['values']['breakpoints']) ? $form_state['values']['breakpoints'] : array();
-    if (!empty($breakpoints)) {
-      foreach ($breakpoints as $key => $breakpointdata) {
-        if (!empty($breakpointdata['name'])) {
-          // Breakpoint is required.
-          if ($key == 'new') {
-            if (empty($breakpointdata['machine_name'])) {
-              form_set_error('breakpoints][' . $key . '][machine_name', 'Machine name field is required');
-            }
-          }
-        }
-      }
-    }
-  }
-  */
+  // @TODO: Verify that paths are valid.
 }
 
 /**
@@ -388,57 +362,26 @@ function node_limit_settings_form_validate($form, &$form_state) {
  * @param $form_state
  */
 function node_limit_settings_form_submit($form, &$form_state) {
-  /*
-  $breakpoints = $form_state['values']['breakpoints'];
-  $group_name = $form_state['group_name'];
-  $global_group = $group_name == '';
-  $group = breakpoints_breakpoint_group_empty_object();
-  if (!$global_group) {
-    // sort by weight, needed to store the right order in a group
-    uasort($breakpoints, '_breakpoints_sort_by_weight_array');
+  $values = $form_state['values'];
+  // dpm($values);
+
+  $node_limit_config = config('node_limit.settings');
+  // Update the module global settings.
+  if (isset($value['node_limit_global_msg'])) {
+    $node_limit_config->set('node_limit_global_msg', $value['node_limit_global_msg']);
   }
-  $saved_breakpoints = array();
-  if (!empty($breakpoints)) {
-    foreach ($breakpoints as $breakpointname => $breakpointdata) {
-      if (!empty($breakpointdata['name'])) {
-        $breakpoint = breakpoints_breakpoint_load_by_fullkey($breakpointname);
-        if ($breakpoint && $breakpointname != 'new') {
-          // only save the weight when on the global screen.
-          if ($global_group) {
-            $breakpoint->weight = $breakpointdata['weight'];
-          }
-          else {
-            $breakpoint->weight = $breakpointdata['global_weight'];
-          }
-          $breakpoint->breakpoint = $breakpointdata['breakpoint'];
-          $breakpoint->multipliers = isset($breakpointdata['multipliers']) ? $breakpointdata['multipliers'] : array();
-          breakpoints_breakpoint_save($breakpoint);
-          $saved_breakpoints[] = $breakpointname;
-        }
-        else {
-          $breakpoint = new stdClass();
-          $breakpoint->name = $breakpointdata['name'];
-          $breakpoint->breakpoint = $breakpointdata['breakpoint'];
-          $breakpoint->source = 'user';
-          $breakpoint->source_type = 'custom';
-          $breakpoint->weight = $breakpointdata['weight'];
-          $breakpoint->status = TRUE;
-          $breakpoint->multipliers = isset($breakpointdata['multipliers']) ? $breakpointdata['multipliers'] : array();
-          $breakpoint->machine_name = 'custom.user.' . $breakpointdata['machine_name'];
-          breakpoints_breakpoint_save($breakpoint);
-          $saved_breakpoints[] = breakpoints_breakpoint_config_name($breakpoint);
-        }
-      }
-    }
-    if (!$global_group) {
-      $group = breakpoints_breakpoint_group_load($group_name);
-      if ($group) {
-        $group->breakpoints = $saved_breakpoints;
-        breakpoints_breakpoint_group_save($group);
-      }
+  if (isset($value['node_limit_global_redirect'])) {
+    $node_limit_config->set('node_limit_global_redirect', $value['node_limit_global_redirect']);
+  }
+  if (isset($value['custom_msg_activate'])) {
+    $node_limit_config->set('custom_msg_by_type', $value['custom_msg_activate']);
+    foreach (node_type_get_types() as $type) {
+      config_set('node.type.' . $type->type, 'settings.limit_custom_message', $values['node_limit_settings_' . $type->type]['message_' . $type->type]);
+      config_set('node.type.' . $type->type, 'settings.limit_redirect', $values['node_limit_settings_' . $type->type]['redirect_' . $type->type]);
     }
   }
-  */
+  $node_limit_config->save();
+  backdrop_set_message(t('The settings have been updated and saved.'));
 }
 
 

@@ -80,7 +80,7 @@ function node_limit_type_node_limit_element_validate($element) {
  */
 function node_limit_type_node_limit_save($lid, $applies, $element) {
   if ($applies) {
-    // @TODO: Error handling in the Catch.
+
     try {
       db_insert('node_limit_type')
         ->fields(array(

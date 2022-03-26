@@ -17,32 +17,26 @@ Installation
 
 How to use this module
 ------------
-###node_limit module
+### node_limit module
 
-The core framework provided here is used by providing your own module,
-which will register instances of the migrate_d2d classes or derivations
-of them. See the migrate_d2b_example sub-module for one approach, where
-instances are registered when the Backdrop caches are cleared.
-Note: Registration will update previously registered classes with any
-new argument changes.
+The core Node Limit framework adds additional functionality that limits how many nodes may be created by your users. Each of the submodules below add a different condition to your Limit definition. These conditions may be combined to restrict the number of nodes that can be created in a precise way.
 
 ### node_limit_interval module
-<!-- @TODO: Paragraph description of the functionality of each module.-->
-This module provides a wizard-based UI for defining your
-Drupal-to-Backdrop migrations. The wizard is appropriate for
-non-technical users to configure and run the Drupal-to-Backdrop
-migration and/or when you don't have to do any special manipulation of
-data along the way.
+This submodule provides the ability to place a limit on the number of nodes that can be created withing a certain amount of time.
 
 ### node_limit_role
+Activate this submodule to add the ability to restrict the amount of nodes that all users in a given role may create.
 
 ### node_limit_type
+The *node_limit_type* module allow you to restrict the amount of nodes of a given type that may be created by a user.
 
 ### node_limit_user
+Limitations can be put on how many nodes that a specific individual user can create by activating the *node_limit_user* module.
 
 ### node_limit_userofrole
+This module limits the amount of nodes that can be created by each user of a given role.
 
-
+**Note:**
 - Node limits do not apply to user 1.
 - If a user belongs to roles A and B, which have limits of 3 and 4 (respectively), the user will have a node limit of 3.
 
@@ -57,7 +51,7 @@ Node Limit provides a framework of API hooks that are available for use by other
 - hook_node_limit_render_element
 - hook_node_limit_save
 
-For more detailed information on these hooks, see the node_limit.api.php file.
+For more detailed information on these hooks, see the *node_limit.api.php* file.
 
 For more information on how to incorporate these hooks into your custom module, take a look at the [hook system documentation](https://docs.backdropcms.org/documentation/understanding-the-hook-system) for Backdrop CMS.
 

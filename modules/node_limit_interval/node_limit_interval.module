@@ -127,7 +127,7 @@ function node_limit_interval_node_limit_save($lid, $applies, $element) {
   if ($applies) {
     $interval = intval($element['interval']);
     $unit = intval($element['unit']);
-    // @TODO: Error handling for Catch.
+
     try {
       db_insert('node_limit_interval')
         ->fields(array(

@@ -1,6 +1,6 @@
 {
     "_config_name": "node_limit.settings",
-    "custom_msg": "",
+    "custom_msg_by_type": 0,
     "node_limit_global_msg": "You can't create more content of type [node_limit:type_title]",
     "node_limit_global_redirect": "",
     "node_limit_message_editable": "",

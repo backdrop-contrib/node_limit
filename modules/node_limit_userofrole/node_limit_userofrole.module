@@ -13,7 +13,7 @@
 function node_limit_userofrole_user_role_delete($role) {
   $limits = db_select('node_limit_userofrole', 'src')
     ->fields('src', array('lid'))
-    ->condition('rid', $role->rid)
+    ->condition('role', $role->name)
     ->execute();
   $lids = array();
   foreach ($limits as $limit) {
@@ -32,9 +32,9 @@ function node_limit_userofrole_node_limit_applies_in_context($lid, $node, $user)
     $applies = NODE_LIMIT_LIMIT_NEUTRAL;
   }
   elseif (!empty($user)) {
-    $isRoleAnonymous = $limit['node_limit_userofrole']['rid'] == DRUPAL_ANONYMOUS_RID;
-    $isRoleAuth = $limit['node_limit_userofrole']['rid'] == DRUPAL_AUTHENTICATED_RID;
-    if (isset($user->roles[$limit['node_limit_userofrole']['rid']]) || ($user->uid > 0 && $isRoleAnonymous) || ($user->uid == 0 && $isRoleAuth)) {
+    $isRoleAnonymous = $limit['node_limit_userofrole']['role'] == BACKDROP_ANONYMOUS_ROLE;
+    $isRoleAuth = $limit['node_limit_userofrole']['role'] == BACKDROP_AUTHENTICATED_ROLE;
+    if (isset($user->roles[$limit['node_limit_userofrole']['role']]) || ($user->uid > 0 && $isRoleAnonymous) || ($user->uid == 0 && $isRoleAuth)) {
       $applies = NODE_LIMIT_LIMIT_DOES_APPLY;
     }
   }
@@ -57,13 +57,10 @@ function node_limit_userofrole_node_limit_sql($lid, SelectQuery $select) {
 
 /**
  * Implements hook_node_limit_element().
- *
- * @TODO: Sort out proper Return statement.
  */
 function node_limit_userofrole_node_limit_element($lid = 0) {
   $limit = node_limit_userofrole_node_limit_load($lid);
-  $rid = !empty($limit['node_limit_userofrole']['rid']) ? $limit['node_limit_userofrole']['rid'] : '';
-
+  $role = !empty($limit['node_limit_userofrole']) ? $limit['node_limit_userofrole'] : array();
   $roles = user_roles();
 
   if (!empty($roles)) {
@@ -72,10 +69,11 @@ function node_limit_userofrole_node_limit_element($lid = 0) {
         '#type' => 'select',
         '#title' => t('Users of Role'),
         '#options' => $roles,
-        '#default_value' => $rid
+        '#default_value' => $role['name'],
       )
     );
   }
+  return array();
 }
 
 /**
@@ -84,7 +82,7 @@ function node_limit_userofrole_node_limit_element($lid = 0) {
 function node_limit_userofrole_node_limit_element_validate($element) {
   /**
    * Validation:
-   * rid must be a role
+   * Check to see if the Role exists.
    */
   $roles = user_roles();
   if (!isset($roles[$element])) {
@@ -101,21 +99,25 @@ function node_limit_userofrole_node_limit_element_validate($element) {
  */
 function node_limit_userofrole_node_limit_save($lid, $applies, $element) {
   if ($applies) {
-    // In the clone context, $element is an array containing
-    // the rid and the role name
+    // In the clone context, $element is an array containing the machine name and the role label.
     if (is_array($element)) {
-      $element = $element['rid'];
+      $element = $element['role'];
     }
-    // @TODO: Error handling in Catch
+
     try {
       db_insert('node_limit_userofrole')
         ->fields(array(
           'lid' => $lid,
-          'rid' => $element,
+          'role' => $element,
         ))
         ->execute();
-    } catch (FieldsOverlapException $e) {
-    } catch (NoFieldsException $e) {
+    }
+    catch (FieldsOverlapException $e) {
+      backdrop_set_message(t('The Node Limit failed to save.'));
+      watchdog_exception('node_limit_userofrole', $e);
+    }
+    catch (NoFieldsException $e) {
+      watchdog_exception('node_limit_userofrole', $e);
     }
   }
 }
@@ -133,20 +135,17 @@ function node_limit_userofrole_node_limit_delete($lids) {
  * Implements hook_node_limit_load().
  */
 function node_limit_userofrole_node_limit_load($lid) {
-  $select = db_select('node_limit_userofrole', 'nlr');
-  $select->join('role', 'r', 'r.rid = nlr.rid');
-  $select->fields('nlr')
-    ->fields('r', array('name'))
-    ->condition('lid', $lid);
+  // We want the Roles that have a Node Limit.
+  $result = db_query('SELECT role FROM node_limit_userofrole WHERE lid = :lid', array(':lid' => $lid))->fetchField();
+  $info = user_role_load($result);
 
-  $info = $select->execute()->fetchAssoc();
-  if (empty($info['rid'])) {
-    return array();
+  if (!empty($info['name'])) {
+    return array(
+      'node_limit_userofrole' => array(
+        'role' => $info['role'],
+        'name' => $info['name']
+      )
+    );
   }
-  return array(
-    'node_limit_userofrole' => array(
-      'rid' => $info['rid'],
-      'name' => $info['name']
-    )
-  );
+  return array();
 }

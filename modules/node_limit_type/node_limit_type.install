@@ -31,3 +31,40 @@ function node_limit_type_schema() {
 
   return $schema;
 }
+
+/**
+ * Implements hook_install().
+ *
+ * In this case, we tack on some information to the existing node types, specifically the node limit access callback.
+ * This module modifies nodes, so much of the configuration settings are added to the Node settings rather than kept
+ * to this module.
+ */
+function node_limit_type_install() {
+  foreach (node_type_get_types() as $type) {
+    // Use the config for the Node.
+    $config = config('node.type.' . $type->type);
+
+    // Set the initial default values for the callback and arguments used be each type in hook_menu().
+    // @TODO: Updating this only on install seems...shortsighted.
+    $config->set('settings.limit_custom_message', '');
+    $type_url_str = str_replace('_', '-', $type->type);
+    $config->set('settings.limit_access_callback', 'node/add/' . $type_url_str);
+    $config->set('settings.limit_access_arguments', 'node/add/' . $type_url_str); // @TODO: Arguments to be added to the URL? Check this.
+    $config->save();
+  }
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function node_limit_type_uninstall() {
+  foreach (node_type_get_types() as $type) {
+    // Use the config for the Node.
+    $config = config('node.type.' . $type->type);
+    // Clear the Node Limit settings from the Node config.
+    $config->clear('settings.limit_custom_message');
+    $config->clear('settings.limit_access_callback');
+    $config->clear('settings.limit_access_arguments');
+    $config->save();
+  }
+}
