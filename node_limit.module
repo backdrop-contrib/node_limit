@@ -127,12 +127,15 @@ function node_limit_menu_alter(&$items) {
  * Implements hook_init().
  */
 function node_limit_init() {
+  // Check to see if the page is the Node Add form.
   if (arg(0) == 'node' && arg(1) == 'add' && $type_url_str = arg(2)) {
     $type = str_replace('-', '_', $type_url_str);
+
+    // If the access is restricted, give the user an 'denied' message.
     if (!node_limit_access($type)) {
-      $nodetype = node_type_get_type($type);
+      $node_type = node_type_get_type($type);
       // Display message for user and redirect based on node limit settings.
-      node_limit_message($nodetype);
+      node_limit_message($node_type);
     }
   }
 }
@@ -161,14 +164,15 @@ function _node_limit_add_access() {
 
 /**
  * Custom access callback for node/add/TYPE pages.
- * @param $type
+ * @param string $type
  *   Content type to check
  * @param $account
  *   User account to check (default to current user)
  */
 function node_limit_access($type, $context = '', $account = NULL) {
   global $user;
-  $config = config('node_limit.settings');
+  $config = config('node.type.' . $type);
+
   if (empty($account)) {
     $account = $user;
   }
@@ -183,8 +187,8 @@ function node_limit_access($type, $context = '', $account = NULL) {
     $node->type = $type;
 
     // These are, by default, set in the node_limit_install().
-    $oldCallback  = $config->get('node_limit_' . $type . '_access_callback');
-    $oldArguments = $config->get('node_limit_' . $type . '_access_arguments', array());
+    $oldCallback  = $config->get('settings.limit_access_callback');
+    $oldArguments = $config->get('settings.limit_access_arguments');
     $oldAccess = !function_exists($oldCallback) || call_user_func_array($oldCallback, $oldArguments);
     $access[$account->uid][$type] = !_node_limit_violates_limit($node, $context) && $oldAccess;
   }
@@ -214,9 +218,9 @@ function node_limit_node_prepare($node) {
   if (empty($node->nid) && _node_limit_violates_limit($node)) {
     // This means there is a violation and this is a new node.
     // Get the Node Type object or, potentially, FALSE if the node cannot be found.
-    $nodetype = node_type_get_type($node);
+    $node_type = node_type_get_type($node);
     // Display message for user and redirect based on node limit settings.
-    node_limit_message($nodetype);
+    node_limit_message($node_type);
 
     // Avoid redirection loop if there is just one content type
     $count = 0;
@@ -259,15 +263,18 @@ function _node_limit_violates_limit(&$node, $context = '') {
   if ($node->uid == 1 || user_access(NODE_LIMIT_PERM_OVERRIDE)) {
     return FALSE;
   }
-  $limits = node_limit_limits($node);
+  $limits = node_limit_limits($node); // Limits is array of lids 1
   foreach ($limits as $lid) {
     $limit = node_limit_load($lid);
+
     if ($limit['nlimit'] == NODE_LIMIT_NO_LIMIT) {
       continue;
     }
+    // How many Nodes have been created so far?
     $select = _node_limit_sql($limit['lid']);
     $count = $select->execute()->fetchField();
-    if ($count >= $limit['nlimit']   && empty($context)) {
+
+    if ($count >= $limit['nlimit'] && empty($context)) {
       return TRUE;
     }
   }
@@ -286,8 +293,8 @@ function _node_limit_violates_limit(&$node, $context = '') {
 function _node_limit_sql($lid) {
   $select = db_select('node', 'n');
   $select->addExpression('COUNT(n.nid)', 'number');
+  // Trigger the node_limit_sql hook for each active module.
   module_invoke_all('node_limit_sql', $lid, $select);
-
   return $select;
 }
 
@@ -299,7 +306,7 @@ function _node_limit_sql($lid) {
  */
 function node_limit_limits(&$node) {
   $user = user_load($node->uid);
-  //get all the limits:
+  // get all the limits:
   $query = db_select('node_limit', 'nl')
     ->fields('nl')
     ->orderBy('weight', 'ASC')
@@ -311,6 +318,7 @@ function node_limit_limits(&$node) {
     $lid = $row->lid;
     $applies = TRUE;
 
+    // Trigger the node_limit_applies_in_context hook to poll each submodule for whether is applies or not.
     $submodule_applies = module_invoke_all('node_limit_applies_in_context', $lid, $node, $user);
     foreach ($submodule_applies as $module => $module_applies) {
       // A submodule returns DOESNT_APPLY if it requires a specific user or role, etc,
@@ -321,10 +329,9 @@ function node_limit_limits(&$node) {
     }
 
     if ($applies == TRUE) {
-      $applicable_limits[] = $lid;
+      $applicable_limits[] = $lid; // 1.
     }
   }
-
   return $applicable_limits;
 }
 

@@ -24,20 +24,37 @@ function node_limit_role_user_role_delete($role) {
 
 /**
  * Implements hook_node_limit_applies_in_context().
+ * Determine if a Node Limit applies to a user when adding a node.
  */
 function node_limit_role_node_limit_applies_in_context($lid, $node, $user) {
-  $limit = node_limit_role_node_limit_load($lid);
+  // By default, this Node Limit does NOT apply, but is actively enabled..
   $applies = NODE_LIMIT_LIMIT_DOESNT_APPLY;
+
+  // Load the Node Limit object
+  $limit = node_limit_role_node_limit_load($lid);
+
+  // If there isn't a Node Limit, this submodule isn't even used right now.
   if (empty($limit)) {
     $applies = NODE_LIMIT_LIMIT_NEUTRAL;
   }
+
   elseif (!empty($user)) {
-    $isRoleAnonymous = $limit['node_limit_role']['role'] == BACKDROP_ANONYMOUS_ROLE;
-    $isRoleAuth = $limit['node_limit_role']['role'] == BACKDROP_AUTHENTICATED_ROLE;
-    if (isset($user->roles[$limit['node_limit_role']['role']]) || ($user->uid > 0 && $isRoleAnonymous) || ($user->uid == 0 && $isRoleAuth)) {
+    // Is this limit placed on anonymous users?
+    $isRoleAnonymous = $limit['node_limit_role']['name'] == BACKDROP_ANONYMOUS_ROLE;
+    // How about Authenticated Users? Is this Node Limit for them?
+    $isRoleAuth = $limit['node_limit_role']['name'] == BACKDROP_AUTHENTICATED_ROLE;
+
+    /*
+     * To determine if this Node Limit does, in fact, apply, it must meet the following conditions:
+     * 1. The Role it applies to must be in the User Roles array of the current user or,
+     * 2. The User ID is greater than zero and $isRoleAnonymous is True or,
+     * 3. The User ID equals zero and $isRoleAuth is True
+     */
+    if ((in_array($limit['node_limit_role']['name'], $user->roles)) || ($user->uid > 0 && $isRoleAnonymous) || ($user->uid == 0 && $isRoleAuth)) {
       $applies = NODE_LIMIT_LIMIT_DOES_APPLY;
     }
   }
+
   return array('node_limit_role' => $applies);
 }
 
@@ -50,16 +67,16 @@ function node_limit_role_node_limit_sql($lid, SelectQuery $select) {
     return;
   }
 
-  if ($limit['node_limit_role']['role'] == BACKDROP_ANONYMOUS_ROLE) {
+  if ($limit['node_limit_role']['name'] == BACKDROP_ANONYMOUS_ROLE) {
     $select->condition('uid', 0);
   }
-  elseif ($limit['node_limit_role']['role'] == BACKDROP_AUTHENTICATED_ROLE) {
+  elseif ($limit['node_limit_role']['name'] == BACKDROP_AUTHENTICATED_ROLE) {
     $select->condition('uid', 0, '!=');
   }
   else {
     $subselect = db_select('users_roles', 'ur')
       ->fields('ur', array('uid'))
-      ->condition('role', $limit['node_limit_role']['role']);
+      ->condition('role', $limit['node_limit_role']['name']);
     $select->condition('uid', $subselect, 'IN');
   }
 }
@@ -108,8 +125,7 @@ function node_limit_role_node_limit_element_validate($element) {
  */
 function node_limit_role_node_limit_save($lid, $applies, $element) {
   if ($applies) {
-    // In the clone context, $element is an array containing
-    // the rid and the role name
+    // In the clone context, $element is an array containing the Role ID and the role name.
     if (is_array($element)) {
       $element = $element['machine_name'];
     }
