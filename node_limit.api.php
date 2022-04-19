@@ -28,6 +28,7 @@ function hook_node_limit_applies_in_context($lid, $node, $user) {
   $limit = submodule_node_limit_load($lid);
 
   $applies = NODE_LIMIT_LIMIT_DOES_APPLY;
+  dpm($applies);
   if (empty($limit)) {
     $applies = NODE_LIMIT_LIMIT_NEUTRAL;
   }

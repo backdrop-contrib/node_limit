@@ -27,7 +27,7 @@ function node_limit_role_user_role_delete($role) {
  * Determine if a Node Limit applies to a user when adding a node.
  */
 function node_limit_role_node_limit_applies_in_context($lid, $node, $user) {
-  // By default, this Node Limit does NOT apply, but is actively enabled..
+  // By default, this Node Limit does NOT apply, but is actively enabled.
   $applies = NODE_LIMIT_LIMIT_DOESNT_APPLY;
 
   // Load the Node Limit object

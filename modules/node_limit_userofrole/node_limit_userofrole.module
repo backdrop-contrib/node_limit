@@ -26,15 +26,24 @@ function node_limit_userofrole_user_role_delete($role) {
  * Implements hook_node_limit_applies_in_context().
  */
 function node_limit_userofrole_node_limit_applies_in_context($lid, $node, $user) {
-  $limit = node_limit_userofrole_node_limit_load($lid);
+  // By default, this Node Limit does NOT apply, but is actively enabled.
   $applies = NODE_LIMIT_LIMIT_DOESNT_APPLY;
+
+  // Load the Node Limit object
+  $limit = node_limit_userofrole_node_limit_load($lid);
+  dpm($limit);
+
+  // If there isn't a Node Limit, this submodule isn't even used right now.
   if (empty($limit)) {
     $applies = NODE_LIMIT_LIMIT_NEUTRAL;
   }
   elseif (!empty($user)) {
-    $isRoleAnonymous = $limit['node_limit_userofrole']['role'] == BACKDROP_ANONYMOUS_ROLE;
-    $isRoleAuth = $limit['node_limit_userofrole']['role'] == BACKDROP_AUTHENTICATED_ROLE;
-    if (isset($user->roles[$limit['node_limit_userofrole']['role']]) || ($user->uid > 0 && $isRoleAnonymous) || ($user->uid == 0 && $isRoleAuth)) {
+    // Is this limit placed on anonymous users?
+    $isRoleAnonymous = $limit['node_limit_userofrole']['name'] == BACKDROP_ANONYMOUS_ROLE;
+    // How about Authenticated Users? Is this Node Limit for them?
+    $isRoleAuth = $limit['node_limit_userofrole']['name'] == BACKDROP_AUTHENTICATED_ROLE;
+
+    if ((in_array($limit['node_limit_role']['name'], $user->roles)) || ($user->uid > 0 && $isRoleAnonymous) || ($user->uid == 0 && $isRoleAuth)) {
       $applies = NODE_LIMIT_LIMIT_DOES_APPLY;
     }
   }
@@ -62,6 +71,7 @@ function node_limit_userofrole_node_limit_element($lid = 0) {
   $limit = node_limit_userofrole_node_limit_load($lid);
   $role = !empty($limit['node_limit_userofrole']) ? $limit['node_limit_userofrole'] : array();
   $roles = user_roles();
+  dpm($roles);
 
   if (!empty($roles)) {
     return array(
@@ -101,7 +111,7 @@ function node_limit_userofrole_node_limit_save($lid, $applies, $element) {
   if ($applies) {
     // In the clone context, $element is an array containing the machine name and the role label.
     if (is_array($element)) {
-      $element = $element['role'];
+      $element = $element['machine_name'];
     }
 
     try {
@@ -139,11 +149,11 @@ function node_limit_userofrole_node_limit_load($lid) {
   $result = db_query('SELECT role FROM node_limit_userofrole WHERE lid = :lid', array(':lid' => $lid))->fetchField();
   $info = user_role_load($result);
 
-  if (!empty($info['name'])) {
+  if (!empty($info->name)) {
     return array(
       'node_limit_userofrole' => array(
-        'role' => $info['role'],
-        'name' => $info['name']
+        'name' => $info->name, // The machine name
+        'label' => $info->label // The Role label (e.g. 'My role label')
       )
     );
   }
