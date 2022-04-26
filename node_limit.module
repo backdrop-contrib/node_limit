@@ -192,6 +192,7 @@ function node_limit_access($type, $context = '', $account = NULL) {
     $oldAccess = !function_exists($oldCallback) || call_user_func_array($oldCallback, $oldArguments);
     $access[$account->uid][$type] = !_node_limit_violates_limit($node, $context) && $oldAccess;
   }
+
   return $access[$account->uid][$type];
 }
 
@@ -311,7 +312,6 @@ function node_limit_limits(&$node) {
     ->fields('nl')
     ->orderBy('weight', 'ASC')
     ->execute();
-
   $applicable_limits = array();
   foreach ($query as $row) {
     // This particular limit id.
@@ -320,6 +320,7 @@ function node_limit_limits(&$node) {
 
     // Trigger the node_limit_applies_in_context hook to poll each submodule for whether is applies or not.
     $submodule_applies = module_invoke_all('node_limit_applies_in_context', $lid, $node, $user);
+
     foreach ($submodule_applies as $module => $module_applies) {
       // A submodule returns DOESNT_APPLY if it requires a specific user or role, etc,
       // and the context given does not satisfy that.
